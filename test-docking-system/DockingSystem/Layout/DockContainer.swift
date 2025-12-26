@@ -6,6 +6,8 @@ import SwiftUI
 public struct DockContainer: View {
     @ObservedObject var state: DockState
     @Environment(\.dockTheme) var theme
+    @State private var dragLocation: CGPoint = .zero
+    @State private var containerSize: CGSize = .zero
     
     public init(state: DockState) {
         self.state = state
@@ -17,13 +19,21 @@ public struct DockContainer: View {
                 // Main layout
                 mainLayout(in: geometry.size)
                 
-                // Drop zone overlays when dragging
+                // Interactive drop zone overlay when dragging
                 if state.draggedPanel != nil {
-                    dropZoneOverlay(in: geometry.size)
+                    InteractiveDropZoneOverlay(
+                        containerSize: geometry.size,
+                        dragLocation: $dragLocation
+                    )
                 }
                 
                 // Floating panels
                 floatingPanels(in: geometry.size)
+                
+                // Drag preview
+                if let panel = state.draggedPanel {
+                    DragPreviewView(panel: panel, location: dragLocation)
+                }
                 
                 // Minimized panels bar
                 if !state.layout.minimizedPanels.isEmpty {
@@ -31,6 +41,40 @@ public struct DockContainer: View {
                 }
             }
             .background(theme.colors.background)
+            .onAppear { containerSize = geometry.size }
+            .onChange(of: geometry.size) { _, newSize in containerSize = newSize }
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        if state.draggedPanel != nil {
+                            dragLocation = value.location
+                            updateDropZoneFromLocation(value.location, in: geometry.size)
+                        }
+                    }
+                    .onEnded { _ in
+                        if state.draggedPanel != nil {
+                            state.endDrag()
+                            dragLocation = .zero
+                        }
+                    }
+            )
+        }
+    }
+    
+    private func updateDropZoneFromLocation(_ location: CGPoint, in size: CGSize) {
+        let edgeThreshold: CGFloat = 80
+        
+        // Check edges
+        if location.x < edgeThreshold {
+            state.updateDropZone(.position(.left))
+        } else if location.x > size.width - edgeThreshold {
+            state.updateDropZone(.position(.right))
+        } else if location.y < edgeThreshold {
+            state.updateDropZone(.position(.top))
+        } else if location.y > size.height - edgeThreshold {
+            state.updateDropZone(.position(.bottom))
+        } else {
+            state.updateDropZone(.position(.center))
         }
     }
     
@@ -172,87 +216,7 @@ public struct DockContainer: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    // MARK: - Drop Zone Overlay
-    
-    @ViewBuilder
-    private func dropZoneOverlay(in size: CGSize) -> some View {
-        ZStack {
-            // Edge drop zones
-            edgeDropZones(in: size)
-            
-            // Center drop zone indicator
-            if case .position(let position) = state.dropZone {
-                dropZoneIndicator(for: position, in: size)
-            }
-        }
-        .allowsHitTesting(true)
-    }
-    
-    @ViewBuilder
-    private func edgeDropZones(in size: CGSize) -> some View {
-        // Left drop zone
-        DropZoneArea(position: .left, containerSize: size)
-            .frame(width: 80)
-            .frame(maxHeight: .infinity)
-            .position(x: 40, y: size.height / 2)
         
-        // Right drop zone
-        DropZoneArea(position: .right, containerSize: size)
-            .frame(width: 80)
-            .frame(maxHeight: .infinity)
-            .position(x: size.width - 40, y: size.height / 2)
-        
-        // Top drop zone
-        DropZoneArea(position: .top, containerSize: size)
-            .frame(maxWidth: .infinity)
-            .frame(height: 60)
-            .position(x: size.width / 2, y: 30)
-        
-        // Bottom drop zone
-        DropZoneArea(position: .bottom, containerSize: size)
-            .frame(maxWidth: .infinity)
-            .frame(height: 60)
-            .position(x: size.width / 2, y: size.height - 30)
-        
-        // Center drop zone
-        DropZoneArea(position: .center, containerSize: size)
-            .frame(width: 120, height: 80)
-            .position(x: size.width / 2, y: size.height / 2)
-    }
-    
-    @ViewBuilder
-    private func dropZoneIndicator(for position: DockPosition, in size: CGSize) -> some View {
-        let frame = dropZoneFrame(for: position, in: size)
-        
-        RoundedRectangle(cornerRadius: theme.cornerRadii.dropZone)
-            .fill(theme.colors.dropZoneBackground)
-            .overlay(
-                RoundedRectangle(cornerRadius: theme.cornerRadii.dropZone)
-                    .strokeBorder(theme.colors.dropZoneHighlight, lineWidth: theme.borders.dropZoneBorderWidth)
-            )
-            .frame(width: frame.width, height: frame.height)
-            .position(x: frame.midX, y: frame.midY)
-            .transition(.opacity)
-            .animation(theme.animations.quickAnimation, value: state.dropZone)
-    }
-    
-    private func dropZoneFrame(for position: DockPosition, in size: CGSize) -> CGRect {
-        switch position {
-        case .left:
-            return CGRect(x: 0, y: 0, width: 250, height: size.height)
-        case .right:
-            return CGRect(x: size.width - 250, y: 0, width: 250, height: size.height)
-        case .top:
-            return CGRect(x: 0, y: 0, width: size.width, height: 200)
-        case .bottom:
-            return CGRect(x: 0, y: size.height - 200, width: size.width, height: 200)
-        case .center:
-            return CGRect(x: size.width * 0.2, y: size.height * 0.2, width: size.width * 0.6, height: size.height * 0.6)
-        case .floating:
-            return .zero
-        }
-    }
-    
     // MARK: - Floating Panels
     
     @ViewBuilder
@@ -294,30 +258,211 @@ public struct DockContainer: View {
     }
 }
 
-// MARK: - Drop Zone Area
+// MARK: - Interactive Drop Zone Overlay
 
-struct DropZoneArea: View {
-    let position: DockPosition
+struct InteractiveDropZoneOverlay: View {
     let containerSize: CGSize
+    @Binding var dragLocation: CGPoint
     @EnvironmentObject var state: DockState
     @Environment(\.dockTheme) var theme
     
     var body: some View {
-        Rectangle()
-            .fill(Color.clear)
-            .contentShape(Rectangle())
-            .onDrop(of: [.text], isTargeted: nil) { providers in
-                state.updateDropZone(.position(position))
-                return true
-            }
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        if state.draggedPanel != nil {
-                            state.updateDropZone(.position(position))
-                        }
-                    }
+        ZStack {
+            // Semi-transparent overlay
+            Color.black.opacity(0.2)
+                .ignoresSafeArea()
+            
+            // Drop zone indicators at edges
+            dropZoneIndicators
+            
+            // Highlight for current drop zone
+            currentDropZoneHighlight
+        }
+        .allowsHitTesting(false)
+    }
+    
+    @ViewBuilder
+    private var dropZoneIndicators: some View {
+        // Left indicator
+        DropZoneIndicator(
+            position: .left,
+            isActive: isDropZone(.left),
+            containerSize: containerSize
+        )
+        
+        // Right indicator
+        DropZoneIndicator(
+            position: .right,
+            isActive: isDropZone(.right),
+            containerSize: containerSize
+        )
+        
+        // Top indicator
+        DropZoneIndicator(
+            position: .top,
+            isActive: isDropZone(.top),
+            containerSize: containerSize
+        )
+        
+        // Bottom indicator
+        DropZoneIndicator(
+            position: .bottom,
+            isActive: isDropZone(.bottom),
+            containerSize: containerSize
+        )
+        
+        // Center indicator
+        DropZoneIndicator(
+            position: .center,
+            isActive: isDropZone(.center),
+            containerSize: containerSize
+        )
+    }
+    
+    @ViewBuilder
+    private var currentDropZoneHighlight: some View {
+        if case .position(let position) = state.dropZone {
+            let frame = dropZoneFrame(for: position)
+            
+            RoundedRectangle(cornerRadius: 8)
+                .fill(theme.colors.dropZoneBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(
+                            theme.colors.accent,
+                            style: StrokeStyle(lineWidth: 3, dash: [8, 4])
+                        )
+                )
+                .frame(width: frame.width, height: frame.height)
+                .position(x: frame.midX, y: frame.midY)
+                .animation(.easeInOut(duration: 0.2), value: state.dropZone)
+        }
+    }
+    
+    private func isDropZone(_ position: DockPosition) -> Bool {
+        if case .position(let p) = state.dropZone {
+            return p == position
+        }
+        return false
+    }
+    
+    private func dropZoneFrame(for position: DockPosition) -> CGRect {
+        switch position {
+        case .left:
+            return CGRect(x: 0, y: 0, width: min(250, containerSize.width * 0.25), height: containerSize.height)
+        case .right:
+            let width = min(250, containerSize.width * 0.25)
+            return CGRect(x: containerSize.width - width, y: 0, width: width, height: containerSize.height)
+        case .top:
+            return CGRect(x: 0, y: 0, width: containerSize.width, height: min(200, containerSize.height * 0.25))
+        case .bottom:
+            let height = min(200, containerSize.height * 0.25)
+            return CGRect(x: 0, y: containerSize.height - height, width: containerSize.width, height: height)
+        case .center:
+            let margin = containerSize.width * 0.15
+            return CGRect(
+                x: margin,
+                y: margin,
+                width: containerSize.width - margin * 2,
+                height: containerSize.height - margin * 2
             )
+        case .floating:
+            return .zero
+        }
+    }
+}
+
+// MARK: - Drop Zone Indicator
+
+struct DropZoneIndicator: View {
+    let position: DockPosition
+    let isActive: Bool
+    let containerSize: CGSize
+    @Environment(\.dockTheme) var theme
+    
+    var body: some View {
+        let frame = indicatorFrame
+        
+        ZStack {
+            // Icon
+            Image(systemName: iconName)
+                .font(.system(size: 24, weight: .medium))
+                .foregroundColor(isActive ? .white : theme.colors.secondaryText)
+        }
+        .frame(width: 60, height: 60)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isActive ? theme.colors.accent : theme.colors.secondaryBackground.opacity(0.9))
+                .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+        )
+        .position(x: frame.midX, y: frame.midY)
+        .scaleEffect(isActive ? 1.1 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isActive)
+    }
+    
+    private var iconName: String {
+        switch position {
+        case .left: return "arrow.left.to.line"
+        case .right: return "arrow.right.to.line"
+        case .top: return "arrow.up.to.line"
+        case .bottom: return "arrow.down.to.line"
+        case .center: return "rectangle.center.inset.filled"
+        case .floating: return "uiwindow.split.2x1"
+        }
+    }
+    
+    private var indicatorFrame: CGRect {
+        let padding: CGFloat = 40
+        switch position {
+        case .left:
+            return CGRect(x: padding, y: containerSize.height / 2, width: 60, height: 60)
+        case .right:
+            return CGRect(x: containerSize.width - padding, y: containerSize.height / 2, width: 60, height: 60)
+        case .top:
+            return CGRect(x: containerSize.width / 2, y: padding, width: 60, height: 60)
+        case .bottom:
+            return CGRect(x: containerSize.width / 2, y: containerSize.height - padding, width: 60, height: 60)
+        case .center:
+            return CGRect(x: containerSize.width / 2, y: containerSize.height / 2, width: 60, height: 60)
+        case .floating:
+            return .zero
+        }
+    }
+}
+
+// MARK: - Drag Preview View
+
+struct DragPreviewView: View {
+    let panel: DockPanel
+    let location: CGPoint
+    @Environment(\.dockTheme) var theme
+    
+    var body: some View {
+        if location != .zero {
+            HStack(spacing: 8) {
+                if let icon = panel.icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(theme.colors.accent)
+                }
+                
+                Text(panel.title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(theme.colors.text)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(theme.colors.panelBackground)
+                    .shadow(color: theme.colors.shadowColor, radius: 16, y: 8)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(theme.colors.accent, lineWidth: 2)
+            )
+            .position(x: location.x, y: location.y - 40)
+        }
     }
 }
 

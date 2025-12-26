@@ -86,12 +86,13 @@ struct DemoSelectorView: View {
                 FeatureRow(icon: "rectangle.stack", text: "Tabbed panel groups")
                 FeatureRow(icon: "uiwindow.split.2x1", text: "Floating windows")
                 FeatureRow(icon: "paintbrush", text: "Multiple themes")
-                FeatureRow(icon: "hand.draw", text: "Drag & drop support")
+                FeatureRow(icon: "hand.draw", text: "Long-press to drag panels")
+                FeatureRow(icon: "arrow.clockwise", text: "Layout auto-saved")
             }
             
             Divider()
             
-            Text("Try dragging panels, resizing borders, and switching themes!")
+            Text("Long-press on a panel header or tab to start dragging. Drop on edges to dock.")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

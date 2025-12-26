@@ -309,4 +309,61 @@ public class DockState: ObservableObject {
         draggedPanel = nil
         dropZone = .none
     }
+    
+    // MARK: - State Persistence
+    
+    private static let persistenceKey = "DockLayoutState"
+    
+    /// Saves the current layout state to UserDefaults
+    public func saveToUserDefaults() {
+        let state = PersistedLayoutState(
+            leftWidth: layout.leftWidth,
+            rightWidth: layout.rightWidth,
+            topHeight: layout.topHeight,
+            bottomHeight: layout.bottomHeight,
+            isLeftCollapsed: layout.isLeftCollapsed,
+            isRightCollapsed: layout.isRightCollapsed,
+            isTopCollapsed: layout.isTopCollapsed,
+            isBottomCollapsed: layout.isBottomCollapsed
+        )
+        
+        if let data = try? JSONEncoder().encode(state) {
+            UserDefaults.standard.set(data, forKey: Self.persistenceKey)
+        }
+    }
+    
+    /// Loads the layout state from UserDefaults
+    public func loadFromUserDefaults() {
+        guard let data = UserDefaults.standard.data(forKey: Self.persistenceKey),
+              let state = try? JSONDecoder().decode(PersistedLayoutState.self, from: data) else {
+            return
+        }
+        
+        layout.leftWidth = state.leftWidth
+        layout.rightWidth = state.rightWidth
+        layout.topHeight = state.topHeight
+        layout.bottomHeight = state.bottomHeight
+        layout.isLeftCollapsed = state.isLeftCollapsed
+        layout.isRightCollapsed = state.isRightCollapsed
+        layout.isTopCollapsed = state.isTopCollapsed
+        layout.isBottomCollapsed = state.isBottomCollapsed
+    }
+    
+    /// Clears persisted state
+    public func clearPersistedState() {
+        UserDefaults.standard.removeObject(forKey: Self.persistenceKey)
+    }
+}
+
+// MARK: - Persisted Layout State
+
+struct PersistedLayoutState: Codable {
+    var leftWidth: CGFloat
+    var rightWidth: CGFloat
+    var topHeight: CGFloat
+    var bottomHeight: CGFloat
+    var isLeftCollapsed: Bool
+    var isRightCollapsed: Bool
+    var isTopCollapsed: Bool
+    var isBottomCollapsed: Bool
 }

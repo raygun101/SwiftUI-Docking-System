@@ -15,17 +15,26 @@ struct IDEDemoView: View {
     }
     
     var body: some View {
-        ZStack {
-            // Main docking system
-            DockingSystem(state: dockState, theme: selectedTheme.theme)
+        VStack(spacing: 0) {
+            // Toolbar at top (not overlapping)
+            toolbar
             
-            // Toolbar overlay
-            VStack {
-                toolbar
-                Spacer()
-            }
+            // Main docking system fills remaining space
+            DockingSystem(state: dockState, theme: selectedTheme.theme)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .ignoresSafeArea(.all, edges: .bottom)
+        .onAppear {
+            dockState.loadFromUserDefaults()
+        }
+        .onChange(of: dockState.layout.leftWidth) { _, _ in dockState.saveToUserDefaults() }
+        .onChange(of: dockState.layout.rightWidth) { _, _ in dockState.saveToUserDefaults() }
+        .onChange(of: dockState.layout.topHeight) { _, _ in dockState.saveToUserDefaults() }
+        .onChange(of: dockState.layout.bottomHeight) { _, _ in dockState.saveToUserDefaults() }
+        .onChange(of: dockState.layout.isLeftCollapsed) { _, _ in dockState.saveToUserDefaults() }
+        .onChange(of: dockState.layout.isRightCollapsed) { _, _ in dockState.saveToUserDefaults() }
+        .onChange(of: dockState.layout.isTopCollapsed) { _, _ in dockState.saveToUserDefaults() }
+        .onChange(of: dockState.layout.isBottomCollapsed) { _, _ in dockState.saveToUserDefaults() }
     }
     
     // MARK: - Toolbar

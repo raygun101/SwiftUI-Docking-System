@@ -233,20 +233,22 @@ struct TabView: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .gesture(
-            DragGesture(minimumDistance: 10)
-                .onChanged { _ in
-                    if !isDragging && panel.visibility.contains(.allowDrag) {
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.2)
+                .onEnded { _ in
+                    if panel.visibility.contains(.allowDrag) {
                         isDragging = true
                         state.startDrag(panel)
+                        
+                        // Haptic feedback
+                        let generator = UIImpactFeedbackGenerator(style: .medium)
+                        generator.impactOccurred()
                     }
                 }
-                .onEnded { _ in
-                    isDragging = false
-                    state.endDrag()
-                }
         )
-        .opacity(isDragging ? 0.5 : 1.0)
+        .opacity(state.draggedPanel?.id == panel.id ? 0.4 : 1.0)
+        .scaleEffect(state.draggedPanel?.id == panel.id ? 0.95 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: state.draggedPanel?.id)
     }
 }
 
@@ -309,19 +311,20 @@ struct DockPanelHeader: View {
             alignment: .bottom
         )
         .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 10)
-                .onChanged { value in
-                    if !isDragging && panel.visibility.contains(.allowDrag) {
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.2)
+                .onEnded { _ in
+                    if panel.visibility.contains(.allowDrag) {
                         isDragging = true
                         state.startDrag(panel)
+                        
+                        // Haptic feedback
+                        let generator = UIImpactFeedbackGenerator(style: .medium)
+                        generator.impactOccurred()
                     }
                 }
-                .onEnded { _ in
-                    isDragging = false
-                    state.endDrag()
-                }
         )
+        .opacity(state.draggedPanel?.id == panel.id ? 0.4 : 1.0)
     }
 }
 
