@@ -64,7 +64,7 @@ public struct DockContainer: View {
     private func updateDropZoneFromLocation(_ location: CGPoint, in size: CGSize) {
         let edgeThreshold: CGFloat = 80
         
-        // Check edges
+        // Check edges first
         if location.x < edgeThreshold {
             state.updateDropZone(.position(.left))
         } else if location.x > size.width - edgeThreshold {
@@ -74,8 +74,112 @@ public struct DockContainer: View {
         } else if location.y > size.height - edgeThreshold {
             state.updateDropZone(.position(.bottom))
         } else {
-            state.updateDropZone(.position(.center))
+            // Check for split drop zones within center area
+            if let splitDropZone = findSplitDropZone(at: location, in: size) {
+                state.updateDropZone(splitDropZone)
+            } else {
+                state.updateDropZone(.position(.center))
+            }
         }
+    }
+    
+    private func findSplitDropZone(at location: CGPoint, in size: CGSize) -> DockDropZone? {
+        // Get the center node and check if it contains splits
+        let centerNode = state.layout.centerNode
+        
+        return findSplitDropZoneInNode(centerNode, at: location, in: size, containerFrame: CGRect(origin: .zero, size: size))
+    }
+    
+    private func findSplitDropZoneInNode(_ node: DockLayoutNode, at location: CGPoint, in containerSize: CGSize, containerFrame: CGRect) -> DockDropZone? {
+        switch node {
+        case .panel(let group):
+            // Check if we can split this panel
+            if let panel = group.activePanel {
+                if containerFrame.contains(location) {
+                    return findSplitPositionInPanel(panel, at: location, panelFrame: containerFrame)
+                }
+            }
+            
+        case .split(let splitNode):
+            // Calculate frames for children based on split orientation and ratio
+            let (firstFrame, secondFrame) = calculateSplitFrames(
+                orientation: splitNode.orientation,
+                ratio: splitNode.splitRatio,
+                containerFrame: containerFrame
+            )
+            
+            // Recursively check children
+            if firstFrame.contains(location) {
+                return findSplitDropZoneInNode(splitNode.first, at: location, in: containerSize, containerFrame: firstFrame)
+            } else if secondFrame.contains(location) {
+                return findSplitDropZoneInNode(splitNode.second, at: location, in: containerSize, containerFrame: secondFrame)
+            }
+            
+        case .empty:
+            break
+        }
+        
+        return nil
+    }
+    
+    private func calculateSplitFrames(orientation: DockSplitOrientation, ratio: CGFloat, containerFrame: CGRect) -> (CGRect, CGRect) {
+        switch orientation {
+        case .horizontal:
+            let firstWidth = containerFrame.width * ratio
+            let firstFrame = CGRect(
+                x: containerFrame.minX,
+                y: containerFrame.minY,
+                width: firstWidth,
+                height: containerFrame.height
+            )
+            let secondFrame = CGRect(
+                x: containerFrame.minX + firstWidth,
+                y: containerFrame.minY,
+                width: containerFrame.width - firstWidth,
+                height: containerFrame.height
+            )
+            return (firstFrame, secondFrame)
+            
+        case .vertical:
+            let firstHeight = containerFrame.height * ratio
+            let firstFrame = CGRect(
+                x: containerFrame.minX,
+                y: containerFrame.minY,
+                width: containerFrame.width,
+                height: firstHeight
+            )
+            let secondFrame = CGRect(
+                x: containerFrame.minX,
+                y: containerFrame.minY + firstHeight,
+                width: containerFrame.width,
+                height: containerFrame.height - firstHeight
+            )
+            return (firstFrame, secondFrame)
+        }
+    }
+    
+    private func findSplitPositionInPanel(_ panel: DockPanel, at location: CGPoint, panelFrame: CGRect) -> DockDropZone? {
+        let localLocation = CGPoint(
+            x: location.x - panelFrame.minX,
+            y: location.y - panelFrame.minY
+        )
+        
+        let panelSize = panelFrame.size
+        let threshold: CGFloat = 40
+        
+        // Check edges of this specific panel
+        if localLocation.x < threshold {
+            return .split(panelID: panel.id, position: .left)
+        } else if localLocation.x > panelSize.width - threshold {
+            return .split(panelID: panel.id, position: .right)
+        } else if localLocation.y < threshold {
+            return .split(panelID: panel.id, position: .top)
+        } else if localLocation.y > panelSize.height - threshold {
+            return .split(panelID: panel.id, position: .bottom)
+        }
+        
+        // Check for tab drop zone (center area)
+        return .tab(panelID: panel.id, index: 0)
     }
     
     // MARK: - Main Layout
@@ -321,7 +425,8 @@ struct InteractiveDropZoneOverlay: View {
     
     @ViewBuilder
     private var currentDropZoneHighlight: some View {
-        if case .position(let position) = state.dropZone {
+        switch state.dropZone {
+        case .position(let position):
             let frame = dropZoneFrame(for: position)
             
             RoundedRectangle(cornerRadius: 8)
@@ -336,6 +441,43 @@ struct InteractiveDropZoneOverlay: View {
                 .frame(width: frame.width, height: frame.height)
                 .position(x: frame.midX, y: frame.midY)
                 .animation(.easeInOut(duration: 0.2), value: state.dropZone)
+                
+        case .split(let panelID, let position):
+            if let frame = findPanelFrame(panelID: panelID) {
+                let splitFrame = calculateSplitHighlightFrame(for: position, in: frame)
+                
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(theme.colors.dropZoneBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(
+                                theme.colors.accent,
+                                style: StrokeStyle(lineWidth: 2, dash: [6, 3])
+                            )
+                    )
+                    .frame(width: splitFrame.width, height: splitFrame.height)
+                    .position(x: splitFrame.midX, y: splitFrame.midY)
+                    .animation(.easeInOut(duration: 0.15), value: state.dropZone)
+            }
+            
+        case .tab(let panelID, _):
+            if let frame = findPanelFrame(panelID: panelID) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(theme.colors.dropZoneBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(
+                                theme.colors.accent,
+                                style: StrokeStyle(lineWidth: 3, dash: [8, 4])
+                            )
+                    )
+                    .frame(width: frame.width, height: frame.height)
+                    .position(x: frame.midX, y: frame.midY)
+                    .animation(.easeInOut(duration: 0.2), value: state.dropZone)
+            }
+            
+        case .none:
+            EmptyView()
         }
     }
     
@@ -368,6 +510,113 @@ struct InteractiveDropZoneOverlay: View {
             )
         case .floating:
             return .zero
+        }
+    }
+    
+    private func findPanelFrame(panelID: DockPanelID) -> CGRect? {
+        // Search through the layout tree to find the panel's frame
+        return findPanelFrameInNode(state.layout.centerNode, panelID: panelID, containerFrame: CGRect(origin: .zero, size: containerSize))
+    }
+    
+    private func findPanelFrameInNode(_ node: DockLayoutNode, panelID: DockPanelID, containerFrame: CGRect) -> CGRect? {
+        switch node {
+        case .panel(let group):
+            if let panel = group.panels.first(where: { $0.id == panelID }) {
+                return containerFrame
+            }
+            
+        case .split(let splitNode):
+            let (firstFrame, secondFrame) = calculateSplitFramesForNode(
+                orientation: splitNode.orientation,
+                ratio: splitNode.splitRatio,
+                containerFrame: containerFrame
+            )
+            
+            if let frame = findPanelFrameInNode(splitNode.first, panelID: panelID, containerFrame: firstFrame) {
+                return frame
+            }
+            if let frame = findPanelFrameInNode(splitNode.second, panelID: panelID, containerFrame: secondFrame) {
+                return frame
+            }
+            
+        case .empty:
+            break
+        }
+        
+        return nil
+    }
+    
+    private func calculateSplitFramesForNode(orientation: DockSplitOrientation, ratio: CGFloat, containerFrame: CGRect) -> (CGRect, CGRect) {
+        switch orientation {
+        case .horizontal:
+            let firstWidth = containerFrame.width * ratio
+            let firstFrame = CGRect(
+                x: containerFrame.minX,
+                y: containerFrame.minY,
+                width: firstWidth,
+                height: containerFrame.height
+            )
+            let secondFrame = CGRect(
+                x: containerFrame.minX + firstWidth,
+                y: containerFrame.minY,
+                width: containerFrame.width - firstWidth,
+                height: containerFrame.height
+            )
+            return (firstFrame, secondFrame)
+            
+        case .vertical:
+            let firstHeight = containerFrame.height * ratio
+            let firstFrame = CGRect(
+                x: containerFrame.minX,
+                y: containerFrame.minY,
+                width: containerFrame.width,
+                height: firstHeight
+            )
+            let secondFrame = CGRect(
+                x: containerFrame.minX,
+                y: containerFrame.minY + firstHeight,
+                width: containerFrame.width,
+                height: containerFrame.height - firstHeight
+            )
+            return (firstFrame, secondFrame)
+        }
+    }
+    
+    private func calculateSplitHighlightFrame(for position: DockPosition, in panelFrame: CGRect) -> CGRect {
+        let inset: CGFloat = 20
+        let thickness: CGFloat = 60
+        
+        switch position {
+        case .left:
+            return CGRect(
+                x: panelFrame.minX,
+                y: panelFrame.minY,
+                width: thickness,
+                height: panelFrame.height
+            )
+        case .right:
+            return CGRect(
+                x: panelFrame.maxX - thickness,
+                y: panelFrame.minY,
+                width: thickness,
+                height: panelFrame.height
+            )
+        case .top:
+            return CGRect(
+                x: panelFrame.minX,
+                y: panelFrame.minY,
+                width: panelFrame.width,
+                height: thickness
+            )
+        case .bottom:
+            return CGRect(
+                x: panelFrame.minX,
+                y: panelFrame.maxY - thickness,
+                width: panelFrame.width,
+                height: thickness
+            )
+        default:
+            return panelFrame.insetBy(dx: inset, dy: inset)
         }
     }
 }

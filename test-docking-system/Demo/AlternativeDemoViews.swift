@@ -18,7 +18,7 @@ struct DashboardDemoView: View {
     static func createDashboardLayout() -> DockLayout {
         let layout = DockLayout()
         
-        // Left - Navigation
+        // Left - Navigation with vertical split (1x2 layout)
         let navigation = DockPanel(
             id: "navigation",
             title: "Navigation",
@@ -29,8 +29,25 @@ struct DashboardDemoView: View {
             NavigationPanelContent()
         }
         
-        let leftGroup = DockPanelGroup(panels: [navigation], position: .left)
-        layout.leftNode = .panel(leftGroup)
+        let bookmarks = DockPanel(
+            id: "bookmarks",
+            title: "Bookmarks",
+            icon: "bookmark",
+            position: .left,
+            visibility: [.showHeader, .allowDrag]
+        ) {
+            BookmarksPanelContent()
+        }
+        
+        // Create vertical split for left panel (1x2 layout)
+        let leftSplit = DockSplitNode(
+            orientation: .vertical,
+            first: .panel(DockPanelGroup(panels: [navigation], position: .left)),
+            second: .panel(DockPanelGroup(panels: [bookmarks], position: .left)),
+            splitRatio: 0.6
+        )
+        
+        layout.leftNode = .split(leftSplit)
         layout.leftWidth = 220
         
         // Center - Main dashboard with splits
@@ -271,6 +288,42 @@ struct DetailsPanelContent: View {
             }
             .padding()
         }
+    }
+}
+
+struct BookmarksPanelContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Bookmarks")
+                .font(.headline)
+            
+            let bookmarks = [
+                ("Dashboard", "square.grid.2x2"),
+                ("Analytics", "chart.bar"),
+                ("Reports", "doc.text"),
+                ("Settings", "gear"),
+                ("Profile", "person.circle")
+            ]
+            
+            ForEach(bookmarks, id: \.0) { title, icon in
+                HStack(spacing: 10) {
+                    Image(systemName: icon)
+                        .font(.system(size: 14))
+                        .foregroundColor(.accentColor)
+                        .frame(width: 20)
+                    
+                    Text(title)
+                        .font(.system(size: 13))
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(6)
+            }
+        }
+        .padding()
     }
 }
 
