@@ -84,10 +84,68 @@ public struct DockContainer: View {
     }
     
     private func findSplitDropZone(at location: CGPoint, in size: CGSize) -> DockDropZone? {
-        // Get the center node and check if it contains splits
-        let centerNode = state.layout.centerNode
+        // Check all zones, not just center
+        let layout = state.layout
         
-        return findSplitDropZoneInNode(centerNode, at: location, in: size, containerFrame: CGRect(origin: .zero, size: size))
+        var currentX: CGFloat = 0
+        var currentY: CGFloat = 0
+        
+        // Check top zone
+        if !isNodeEmpty(layout.topNode) {
+            let topHeight = layout.isTopCollapsed ? theme.spacing.collapsedWidth : layout.topHeight
+            let topFrame = CGRect(x: 0, y: 0, width: size.width, height: topHeight)
+            if topFrame.contains(location) {
+                return findSplitDropZoneInNode(layout.topNode, at: location, in: size, containerFrame: topFrame)
+            }
+            currentY += topHeight
+        }
+        
+        // Check middle section (left, center, right)
+        var leftWidth: CGFloat = 0
+        var rightWidth: CGFloat = 0
+        
+        // Check left zone
+        if !isNodeEmpty(layout.leftNode) {
+            leftWidth = layout.isLeftCollapsed ? theme.spacing.collapsedWidth : layout.leftWidth
+            let leftFrame = CGRect(x: 0, y: currentY, width: leftWidth, height: size.height - currentY)
+            if leftFrame.contains(location) {
+                return findSplitDropZoneInNode(layout.leftNode, at: location, in: size, containerFrame: leftFrame)
+            }
+        }
+        
+        // Check right zone
+        if !isNodeEmpty(layout.rightNode) {
+            rightWidth = layout.isRightCollapsed ? theme.spacing.collapsedWidth : layout.rightWidth
+            let rightFrame = CGRect(x: size.width - rightWidth, y: currentY, width: rightWidth, height: size.height - currentY)
+            if rightFrame.contains(location) {
+                return findSplitDropZoneInNode(layout.rightNode, at: location, in: size, containerFrame: rightFrame)
+            }
+        }
+        
+        // Check center zone
+        if !isNodeEmpty(layout.centerNode) {
+            let centerFrame = CGRect(
+                x: leftWidth,
+                y: currentY,
+                width: size.width - leftWidth - rightWidth,
+                height: size.height - currentY
+            )
+            
+            if centerFrame.contains(location) {
+                return findSplitDropZoneInNode(layout.centerNode, at: location, in: size, containerFrame: centerFrame)
+            }
+        }
+        
+        // Check bottom zone
+        if !isNodeEmpty(layout.bottomNode) {
+            let bottomHeight = layout.isBottomCollapsed ? theme.spacing.collapsedWidth : layout.bottomHeight
+            let bottomFrame = CGRect(x: 0, y: size.height - bottomHeight, width: size.width, height: bottomHeight)
+            if bottomFrame.contains(location) {
+                return findSplitDropZoneInNode(layout.bottomNode, at: location, in: size, containerFrame: bottomFrame)
+            }
+        }
+        
+        return nil
     }
     
     private func findSplitDropZoneInNode(_ node: DockLayoutNode, at location: CGPoint, in containerSize: CGSize, containerFrame: CGRect) -> DockDropZone? {
@@ -514,8 +572,68 @@ struct InteractiveDropZoneOverlay: View {
     }
     
     private func findPanelFrame(panelID: DockPanelID) -> CGRect? {
-        // Search through the layout tree to find the panel's frame
-        return findPanelFrameInNode(state.layout.centerNode, panelID: panelID, containerFrame: CGRect(origin: .zero, size: containerSize))
+        // Search through all zones to find the panel's frame
+        let layout = state.layout
+        let size = containerSize
+        
+        var currentY: CGFloat = 0
+        
+        // Check top zone
+        if !isNodeEmpty(layout.topNode) {
+            let topHeight = layout.isTopCollapsed ? theme.spacing.collapsedWidth : layout.topHeight
+            let topFrame = CGRect(x: 0, y: 0, width: size.width, height: topHeight)
+            if let frame = findPanelFrameInNode(layout.topNode, panelID: panelID, containerFrame: topFrame) {
+                return frame
+            }
+            currentY += topHeight
+        }
+        
+        // Check middle section (left, center, right)
+        var leftWidth: CGFloat = 0
+        var rightWidth: CGFloat = 0
+        
+        // Check left zone
+        if !isNodeEmpty(layout.leftNode) {
+            leftWidth = layout.isLeftCollapsed ? theme.spacing.collapsedWidth : layout.leftWidth
+            let leftFrame = CGRect(x: 0, y: currentY, width: leftWidth, height: size.height - currentY)
+            if let frame = findPanelFrameInNode(layout.leftNode, panelID: panelID, containerFrame: leftFrame) {
+                return frame
+            }
+        }
+        
+        // Check right zone
+        if !isNodeEmpty(layout.rightNode) {
+            rightWidth = layout.isRightCollapsed ? theme.spacing.collapsedWidth : layout.rightWidth
+            let rightFrame = CGRect(x: size.width - rightWidth, y: currentY, width: rightWidth, height: size.height - currentY)
+            if let frame = findPanelFrameInNode(layout.rightNode, panelID: panelID, containerFrame: rightFrame) {
+                return frame
+            }
+        }
+        
+        // Check center zone
+        if !isNodeEmpty(layout.centerNode) {
+            let centerFrame = CGRect(
+                x: leftWidth,
+                y: currentY,
+                width: size.width - leftWidth - rightWidth,
+                height: size.height - currentY
+            )
+            
+            if let frame = findPanelFrameInNode(layout.centerNode, panelID: panelID, containerFrame: centerFrame) {
+                return frame
+            }
+        }
+        
+        // Check bottom zone
+        if !isNodeEmpty(layout.bottomNode) {
+            let bottomHeight = layout.isBottomCollapsed ? theme.spacing.collapsedWidth : layout.bottomHeight
+            let bottomFrame = CGRect(x: 0, y: size.height - bottomHeight, width: size.width, height: bottomHeight)
+            if let frame = findPanelFrameInNode(layout.bottomNode, panelID: panelID, containerFrame: bottomFrame) {
+                return frame
+            }
+        }
+        
+        return nil
     }
     
     private func findPanelFrameInNode(_ node: DockLayoutNode, panelID: DockPanelID, containerFrame: CGRect) -> CGRect? {
@@ -580,6 +698,13 @@ struct InteractiveDropZoneOverlay: View {
             )
             return (firstFrame, secondFrame)
         }
+    }
+    
+    private func isNodeEmpty(_ node: DockLayoutNode) -> Bool {
+        if case .empty = node {
+            return true
+        }
+        return false
     }
     
     private func calculateSplitHighlightFrame(for position: DockPosition, in panelFrame: CGRect) -> CGRect {
