@@ -39,7 +39,9 @@ struct FloatingPanelView: View {
             RoundedRectangle(cornerRadius: theme.cornerRadii.floating)
                 .strokeBorder(
                     group.activePanel?.isActive == true ? theme.colors.activeBorder : theme.colors.border,
-                    lineWidth: theme.borders.panelBorderWidth
+                    lineWidth: group.activePanel?.isActive == true
+                        ? theme.borders.activeBorderWidth
+                        : theme.borders.borderWidth
                 )
         )
         .shadow(
@@ -63,7 +65,7 @@ struct FloatingPanelView: View {
     // MARK: - Floating Header
     
     private var floatingHeader: some View {
-        HStack(spacing: theme.spacing.itemSpacing) {
+        HStack(spacing: theme.spacing.tabPadding) {
             // Window controls
             HStack(spacing: 6) {
                 WindowControlButton(color: .red) {

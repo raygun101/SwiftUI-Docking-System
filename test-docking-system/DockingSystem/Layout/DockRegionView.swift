@@ -107,7 +107,7 @@ struct DockPanelGroupView: View {
             RoundedRectangle(cornerRadius: 0)
                 .strokeBorder(
                     group.activePanel?.isActive == true ? theme.colors.activeBorder : theme.colors.border,
-                    lineWidth: group.activePanel?.isActive == true ? theme.borders.activeBorderWidth : theme.borders.panelBorderWidth
+                    lineWidth: group.activePanel?.isActive == true ? theme.borders.activeBorderWidth : theme.borders.borderWidth
                 )
         )
     }
@@ -181,7 +181,7 @@ struct TabView: View {
         HStack(spacing: 4) {
             if let icon = panel.icon {
                 Image(systemName: icon)
-                    .font(.system(size: theme.typography.smallIconSize))
+                    .font(.system(size: max(theme.typography.iconSize - 2, 10)))
                     .foregroundColor(isActive ? theme.colors.accent : theme.colors.secondaryText)
             }
             
@@ -263,7 +263,7 @@ struct DockPanelHeader: View {
     @State private var isDragging = false
     
     var body: some View {
-        HStack(spacing: theme.spacing.itemSpacing) {
+        HStack(spacing: theme.spacing.headerPadding / 2) {
             // Icon
             if let icon = panel.icon {
                 Image(systemName: icon)
@@ -340,7 +340,7 @@ struct HeaderActionButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: theme.typography.smallIconSize))
+                .font(.system(size: max(theme.typography.iconSize - 2, 10)))
                 .foregroundColor(theme.colors.secondaryText)
                 .frame(width: 22, height: 22)
                 .background(isHovered ? theme.colors.hoverBackground : Color.clear)

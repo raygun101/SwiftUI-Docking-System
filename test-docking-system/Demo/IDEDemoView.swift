@@ -5,9 +5,10 @@ import SwiftUI
 /// Comprehensive demo showcasing the docking system capabilities
 struct IDEDemoView: View {
     @StateObject private var dockState: DockState
-    @State private var selectedTheme: ThemeOption = .xcode
     @State private var showingThemePicker = false
     @State private var showingLayoutPicker = false
+    
+    @EnvironmentObject private var themeManager: ThemeManager
     
     init() {
         let layout = Self.createIDELayout()
@@ -20,7 +21,7 @@ struct IDEDemoView: View {
             toolbar
             
             // Main docking system fills remaining space
-            DockingSystem(state: dockState, theme: selectedTheme.theme)
+            DockingSystem(state: dockState, theme: themeManager.currentTheme)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .ignoresSafeArea(.all, edges: .bottom)
@@ -53,30 +54,7 @@ struct IDEDemoView: View {
                 .frame(height: 20)
             
             // Theme picker
-            Menu {
-                ForEach(ThemeOption.allCases, id: \.self) { theme in
-                    Button(action: { selectedTheme = theme }) {
-                        HStack {
-                            Text(theme.name)
-                            if theme == selectedTheme {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "paintbrush")
-                    Text(selectedTheme.name)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 10))
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(6)
-            }
-            .buttonStyle(.plain)
+            themePicker
             
             // Layout presets
             Menu {
@@ -416,32 +394,51 @@ struct IDEDemoView: View {
     enum PanelType {
         case fileExplorer, console, inspector, search, debug, git
     }
-}
-
-// MARK: - Theme Option
-
-enum ThemeOption: CaseIterable {
-    case `default`
-    case dark
-    case xcode
-    case vscode
     
-    var name: String {
-        switch self {
-        case .default: return "Default"
-        case .dark: return "Dark"
-        case .xcode: return "Xcode"
-        case .vscode: return "VS Code"
+    private var themePicker: some View {
+        Menu {
+            Button("Default Theme") {
+                themeManager.applyDefaultTheme()
+            }
+            if !themeManager.availableThemes.isEmpty {
+                Divider()
+            }
+            ForEach(ThemePresets.ThemeCategory.allCases, id: \.self) { category in
+                let themes = themeManager.availableThemes.filter { $0.category == category }
+                if !themes.isEmpty {
+                    Text(category.displayName)
+                        .font(.subheadline)
+                    ForEach(themes, id: \.name) { theme in
+                        Button(action: {
+                            themeManager.applyTheme(named: theme.name)
+                        }) {
+                            HStack {
+                                Text(theme.displayName)
+                                Spacer()
+                                if themeManager.selectedThemeMetadata?.name == theme.name {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                    if category != ThemePresets.ThemeCategory.allCases.last {
+                        Divider()
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "paintbrush")
+                Text(themeManager.selectedThemeMetadata?.displayName ?? "Default Theme")
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.gray.opacity(0.2))
+            .cornerRadius(6)
         }
-    }
-    
-    var theme: any DockThemeProtocol {
-        switch self {
-        case .default: return DefaultDockTheme()
-        case .dark: return DarkDockTheme()
-        case .xcode: return XcodeDockTheme()
-        case .vscode: return VSCodeDockTheme()
-        }
+        .buttonStyle(.plain)
     }
 }
 

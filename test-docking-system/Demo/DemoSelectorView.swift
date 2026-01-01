@@ -183,6 +183,7 @@ struct DemoSelectorButton: View {
 /// Simple demo showing basic docking capabilities
 struct SimpleDemoView: View {
     @StateObject private var dockState: DockState
+    @EnvironmentObject private var themeManager: ThemeManager
     
     init() {
         let layout = Self.createSimpleLayout()
@@ -190,7 +191,7 @@ struct SimpleDemoView: View {
     }
     
     var body: some View {
-        DockingSystem(state: dockState, theme: DefaultDockTheme())
+        DockingSystem(state: dockState, theme: themeManager.currentTheme)
     }
     
     static func createSimpleLayout() -> DockLayout {
@@ -282,4 +283,5 @@ struct SimplePanelContent: View {
 
 #Preview {
     DemoSelectorView()
+        .environmentObject(ThemeManager())
 }

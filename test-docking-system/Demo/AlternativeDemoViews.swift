@@ -5,6 +5,7 @@ import SwiftUI
 /// Demo showing dashboard-style layout
 struct DashboardDemoView: View {
     @StateObject private var dockState: DockState
+    @EnvironmentObject private var themeManager: ThemeManager
     
     init() {
         let layout = Self.createDashboardLayout()
@@ -12,7 +13,7 @@ struct DashboardDemoView: View {
     }
     
     var body: some View {
-        DockingSystem(state: dockState, theme: DarkDockTheme())
+        DockingSystem(state: dockState, theme: themeManager.currentTheme)
     }
     
     static func createDashboardLayout() -> DockLayout {
@@ -393,6 +394,7 @@ struct ActivityRow: View {
 /// Demo showing creative app layout (like design tools)
 struct CreativeAppDemoView: View {
     @StateObject private var dockState: DockState
+    @EnvironmentObject private var themeManager: ThemeManager
     
     init() {
         let layout = Self.createCreativeLayout()
@@ -400,7 +402,7 @@ struct CreativeAppDemoView: View {
     }
     
     var body: some View {
-        DockingSystem(state: dockState, theme: VSCodeDockTheme())
+        DockingSystem(state: dockState, theme: themeManager.currentTheme)
     }
     
     static func createCreativeLayout() -> DockLayout {
