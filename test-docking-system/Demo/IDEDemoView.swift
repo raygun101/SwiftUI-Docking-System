@@ -41,17 +41,21 @@ struct IDEDemoView: View {
     // MARK: - Toolbar
     
     private var toolbar: some View {
-        HStack(spacing: 16) {
+        let theme = themeManager.currentTheme
+        
+        return HStack(spacing: 16) {
             // App title
             HStack(spacing: 8) {
                 Image(systemName: "hammer.fill")
-                    .foregroundColor(.orange)
+                    .foregroundColor(theme.colors.accent)
                 Text("Dock IDE")
-                    .font(.headline)
+                    .font(theme.typography.headerFont.weight(.bold))
+                    .foregroundColor(theme.colors.text)
             }
             
             Divider()
                 .frame(height: 20)
+                .overlay(theme.colors.separator)
             
             // Theme picker
             themePicker
@@ -73,8 +77,9 @@ struct IDEDemoView: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.gray.opacity(0.2))
+                .background(theme.colors.tertiaryBackground)
                 .cornerRadius(6)
+                .foregroundColor(theme.colors.text)
             }
             .buttonStyle(.plain)
             
@@ -103,6 +108,7 @@ struct IDEDemoView: View {
             
             Divider()
                 .frame(height: 20)
+                .overlay(theme.colors.separator)
             
             // Add panel button
             Menu {
@@ -127,14 +133,15 @@ struct IDEDemoView: View {
             } label: {
                 Image(systemName: "plus.rectangle")
                     .padding(6)
-                    .background(Color.gray.opacity(0.2))
+                    .background(theme.colors.tertiaryBackground)
                     .cornerRadius(6)
+                    .foregroundColor(theme.colors.text)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(.ultraThinMaterial)
+        .background(theme.colors.headerBackground)
     }
     
     // MARK: - Layout Creation
@@ -396,7 +403,9 @@ struct IDEDemoView: View {
     }
     
     private var themePicker: some View {
-        Menu {
+        let theme = themeManager.currentTheme
+        
+        return Menu {
             Button("Default Theme") {
                 themeManager.applyDefaultTheme()
             }
@@ -435,8 +444,9 @@ struct IDEDemoView: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(Color.gray.opacity(0.2))
+            .background(theme.colors.tertiaryBackground)
             .cornerRadius(6)
+            .foregroundColor(theme.colors.text)
         }
         .buttonStyle(.plain)
     }
@@ -450,16 +460,17 @@ struct PanelToggleButton: View {
     let action: () -> Void
     
     @State private var isHovered = false
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 14))
-                .foregroundColor(isActive ? .accentColor : .secondary)
+                .foregroundColor(isActive ? theme.colors.accent : theme.colors.secondaryText)
                 .frame(width: 28, height: 28)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(isActive ? Color.accentColor.opacity(0.15) : (isHovered ? Color.gray.opacity(0.2) : Color.clear))
+                        .fill(isActive ? theme.colors.accent.opacity(0.15) : (isHovered ? theme.colors.hoverBackground : Color.clear))
                 )
         }
         .buttonStyle(.plain)

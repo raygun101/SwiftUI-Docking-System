@@ -5,6 +5,7 @@ import SwiftUI
 /// File explorer panel content
 struct FileExplorerView: View {
     @State private var expandedFolders: Set<String> = ["Sources"]
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         ScrollView {
@@ -25,6 +26,7 @@ struct FileExplorerView: View {
             }
             .padding(.vertical, 8)
         }
+        .background(theme.colors.secondaryBackground)
     }
 }
 
@@ -38,6 +40,7 @@ struct FileTreeItem<Content: View>: View {
     
     @State private var isHovered = false
     @State private var localExpanded: Bool
+    @Environment(\.dockTheme) var theme
     
     init(
         name: String,
@@ -62,7 +65,7 @@ struct FileTreeItem<Content: View>: View {
                 if isFolder {
                     Image(systemName: localExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 10))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondaryText)
                         .frame(width: 12)
                 } else {
                     Spacer().frame(width: 12)
@@ -74,13 +77,13 @@ struct FileTreeItem<Content: View>: View {
                 
                 Text(name)
                     .font(.system(size: 13))
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.colors.text)
                 
                 Spacer()
             }
             .padding(.leading, CGFloat(level) * 16 + 8)
             .padding(.vertical, 4)
-            .background(isHovered ? Color.gray.opacity(0.15) : Color.clear)
+            .background(isHovered ? theme.colors.hoverBackground : Color.clear)
             .contentShape(Rectangle())
             .onTapGesture {
                 if isFolder {
@@ -110,13 +113,14 @@ struct FileTreeItem<Content: View>: View {
         if icon == "swift" {
             return .orange
         }
-        return isFolder ? .blue : .secondary
+        return isFolder ? theme.colors.accentSecondary : theme.colors.secondaryText
     }
 }
 
 /// Code editor panel content
 struct CodeEditorView: View {
     let fileName: String
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         ScrollView {
@@ -125,7 +129,7 @@ struct CodeEditorView: View {
                     HStack(alignment: .top, spacing: 0) {
                         Text("\(index + 1)")
                             .font(.system(size: 12, design: .monospaced))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.tertiaryText)
                             .frame(width: 40, alignment: .trailing)
                             .padding(.trailing, 12)
                         
@@ -140,7 +144,7 @@ struct CodeEditorView: View {
             }
             .padding()
         }
-        .background(Color(white: 0.12))
+        .background(theme.colors.background)
     }
     
     private func syntaxColor(for line: String) -> Color {
@@ -151,7 +155,7 @@ struct CodeEditorView: View {
         } else if line.contains("\"") {
             return .red
         }
-        return .white
+        return theme.colors.text
     }
     
     private var sampleCode: [String] {
@@ -195,6 +199,7 @@ struct ConsoleView: View {
         LogEntry(type: .warning, message: "Deprecated API usage in ContentView.swift:15"),
         LogEntry(type: .info, message: "User interaction detected"),
     ]
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         ScrollView {
@@ -208,11 +213,11 @@ struct ConsoleView: View {
                         
                         Text(log.timestamp)
                             .font(.system(size: 11, design: .monospaced))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.tertiaryText)
                         
                         Text(log.message)
                             .font(.system(size: 12, design: .monospaced))
-                            .foregroundColor(log.type.color)
+                            .foregroundColor(log.type.color == .secondary ? theme.colors.text : log.type.color)
                         
                         Spacer()
                     }
@@ -222,7 +227,7 @@ struct ConsoleView: View {
             }
             .padding(.vertical, 8)
         }
-        .background(Color(white: 0.08))
+        .background(theme.colors.background)
     }
 }
 
@@ -263,6 +268,8 @@ struct LogEntry: Identifiable {
 
 /// Inspector panel content
 struct InspectorView: View {
+    @Environment(\.dockTheme) var theme
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -293,6 +300,7 @@ struct InspectorView: View {
             }
             .padding()
         }
+        .background(theme.colors.secondaryBackground)
     }
 }
 
@@ -300,6 +308,7 @@ struct InspectorSection<Content: View>: View {
     let title: String
     let content: () -> Content
     @State private var isExpanded = true
+    @Environment(\.dockTheme) var theme
     
     init(title: String, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
@@ -312,11 +321,11 @@ struct InspectorSection<Content: View>: View {
                 HStack {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondaryText)
                     
                     Text(title.uppercased())
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondaryText)
                     
                     Spacer()
                 }
@@ -335,21 +344,22 @@ struct InspectorSection<Content: View>: View {
 struct InspectorRow: View {
     let label: String
     let value: String
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         HStack {
             Text(label)
                 .font(.system(size: 12))
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondaryText)
             
             Spacer()
             
             Text(value)
                 .font(.system(size: 12))
-                .foregroundColor(.primary)
+                .foregroundColor(theme.colors.text)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
-                .background(Color.gray.opacity(0.15))
+                .background(theme.colors.tertiaryBackground)
                 .cornerRadius(4)
         }
     }
@@ -357,6 +367,8 @@ struct InspectorRow: View {
 
 /// Debug panel content
 struct DebugView: View {
+    @Environment(\.dockTheme) var theme
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -370,7 +382,7 @@ struct DebugView: View {
                     ForEach(0..<5) { i in
                         Text("\(i). ContentView.body.getter")
                             .font(.system(size: 11, design: .monospaced))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondaryText)
                     }
                 }
                 
@@ -381,12 +393,14 @@ struct DebugView: View {
             }
             .padding()
         }
+        .background(theme.colors.secondaryBackground)
     }
 }
 
 struct DebugSection<Content: View>: View {
     let title: String
     let content: () -> Content
+    @Environment(\.dockTheme) var theme
     
     init(title: String, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
@@ -397,7 +411,7 @@ struct DebugSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondaryText)
             
             content()
         }
@@ -408,12 +422,13 @@ struct DebugVariable: View {
     let name: String
     let type: String
     let value: String
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         HStack {
             Text(name)
                 .font(.system(size: 12, design: .monospaced))
-                .foregroundColor(.primary)
+                .foregroundColor(theme.colors.text)
             
             Text(type)
                 .font(.system(size: 10, design: .monospaced))
@@ -432,20 +447,21 @@ struct BreakpointRow: View {
     let file: String
     let line: Int
     let enabled: Bool
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         HStack {
             Image(systemName: enabled ? "circle.fill" : "circle")
                 .font(.system(size: 8))
-                .foregroundColor(enabled ? .blue : .secondary)
+                .foregroundColor(enabled ? .blue : theme.colors.secondaryText)
             
             Text(file)
                 .font(.system(size: 11))
-                .foregroundColor(.primary)
+                .foregroundColor(theme.colors.text)
             
             Text(":\(line)")
                 .font(.system(size: 11))
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondaryText)
             
             Spacer()
         }
@@ -455,31 +471,34 @@ struct BreakpointRow: View {
 /// Search panel content
 struct SearchView: View {
     @State private var searchText = ""
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         VStack(spacing: 0) {
             // Search field
             HStack {
                 Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondaryText)
                 
                 TextField("Search", text: $searchText)
                     .textFieldStyle(.plain)
+                    .foregroundColor(theme.colors.text)
                 
                 if !searchText.isEmpty {
                     Button(action: { searchText = "" }) {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondaryText)
                     }
                     .buttonStyle(.plain)
                 }
             }
             .padding(8)
-            .background(Color.gray.opacity(0.15))
+            .background(theme.colors.tertiaryBackground)
             .cornerRadius(6)
             .padding()
             
             Divider()
+                .overlay(theme.colors.separator)
             
             // Results
             ScrollView {
@@ -490,6 +509,7 @@ struct SearchView: View {
                 }
             }
         }
+        .background(theme.colors.secondaryBackground)
     }
 }
 
@@ -498,6 +518,7 @@ struct SearchResult: View {
     let line: Int
     let preview: String
     @State private var isHovered = false
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -508,22 +529,23 @@ struct SearchResult: View {
                 
                 Text(file)
                     .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(theme.colors.text)
                 
                 Text(":\(line)")
                     .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondaryText)
                 
                 Spacer()
             }
             
             Text(preview)
                 .font(.system(size: 11, design: .monospaced))
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondaryText)
                 .lineLimit(1)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(isHovered ? Color.gray.opacity(0.15) : Color.clear)
+        .background(isHovered ? theme.colors.hoverBackground : Color.clear)
         .onHover { hovering in
             isHovered = hovering
         }
@@ -532,6 +554,8 @@ struct SearchResult: View {
 
 /// Git/Source Control panel content
 struct SourceControlView: View {
+    @Environment(\.dockTheme) var theme
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -541,20 +565,22 @@ struct SourceControlView: View {
                         .foregroundColor(.green)
                     Text("main")
                         .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(theme.colors.text)
                     Spacer()
                     Text("↑2 ↓0")
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondaryText)
                 }
                 .padding(.horizontal)
                 
                 Divider()
+                    .overlay(theme.colors.separator)
                 
                 // Changes
                 VStack(alignment: .leading, spacing: 8) {
                     Text("CHANGES")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondaryText)
                         .padding(.horizontal)
                     
                     SourceControlFile(name: "ContentView.swift", status: .modified)
@@ -564,6 +590,7 @@ struct SourceControlView: View {
             }
             .padding(.vertical)
         }
+        .background(theme.colors.secondaryBackground)
     }
 }
 
@@ -571,6 +598,7 @@ struct SourceControlFile: View {
     let name: String
     let status: FileStatus
     @State private var isHovered = false
+    @Environment(\.dockTheme) var theme
     
     enum FileStatus {
         case modified, added, deleted
@@ -600,6 +628,7 @@ struct SourceControlFile: View {
             
             Text(name)
                 .font(.system(size: 12))
+                .foregroundColor(theme.colors.text)
             
             Spacer()
             
@@ -609,7 +638,7 @@ struct SourceControlFile: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
-        .background(isHovered ? Color.gray.opacity(0.15) : Color.clear)
+        .background(isHovered ? theme.colors.hoverBackground : Color.clear)
         .onHover { hovering in
             isHovered = hovering
         }
@@ -619,6 +648,7 @@ struct SourceControlFile: View {
 /// Preview panel content
 struct PreviewPanelView: View {
     @State private var selectedDevice = "iPhone 15 Pro"
+    @Environment(\.dockTheme) var theme
     
     var body: some View {
         VStack(spacing: 0) {
@@ -636,15 +666,16 @@ struct PreviewPanelView: View {
                 
                 Button(action: {}) {
                     Image(systemName: "arrow.clockwise")
+                        .foregroundColor(theme.colors.secondaryText)
                 }
                 .buttonStyle(.plain)
             }
             .padding(8)
-            .background(Color.gray.opacity(0.1))
+            .background(theme.colors.tertiaryBackground)
             
             // Preview area
             ZStack {
-                Color.black.opacity(0.3)
+                theme.colors.panelBackground.opacity(0.5)
                 
                 RoundedRectangle(cornerRadius: 40)
                     .fill(Color.white)
@@ -653,19 +684,23 @@ struct PreviewPanelView: View {
                         VStack {
                             Text("Preview")
                                 .font(.title2)
+                                .foregroundColor(.black)
                             Text("iPhone 15 Pro")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.gray)
                         }
                     )
                     .shadow(radius: 20)
             }
         }
+        .background(theme.colors.background)
     }
 }
 
 /// Problems panel content
 struct ProblemsView: View {
+    @Environment(\.dockTheme) var theme
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -689,6 +724,7 @@ struct ProblemsView: View {
                 )
             }
         }
+        .background(theme.colors.background)
     }
 }
 
@@ -698,6 +734,7 @@ struct ProblemRow: View {
     let file: String
     let line: Int
     @State private var isHovered = false
+    @Environment(\.dockTheme) var theme
     
     enum ProblemType {
         case error, warning
@@ -726,14 +763,15 @@ struct ProblemRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(message)
                     .font(.system(size: 12))
+                    .foregroundColor(theme.colors.text)
                 
                 HStack(spacing: 4) {
                     Text(file)
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondaryText)
                     Text(":\(line)")
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondaryText)
                 }
             }
             
@@ -741,7 +779,7 @@ struct ProblemRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(isHovered ? Color.gray.opacity(0.15) : Color.clear)
+        .background(isHovered ? theme.colors.hoverBackground : Color.clear)
         .onHover { hovering in
             isHovered = hovering
         }

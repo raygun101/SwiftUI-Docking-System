@@ -9,6 +9,7 @@ public class ThemePresets {
         // MARK: - Register Style Classes
         
         registry.registerStyle(DefaultStyleClass.self, named: "DefaultStyleClass")
+        registry.registerStyle(ProfessionalStyleClass.self, named: "ProfessionalStyleClass")
         registry.registerStyle(RetroMaxOS9StyleClass.self, named: "RetroMaxOS9StyleClass")
         
         // MARK: - Register Palettes
@@ -44,7 +45,7 @@ public class ThemePresets {
         
         // Modern Themes
         registry.registerTheme(
-            style: "DefaultStyleClass",
+            style: "ProfessionalStyleClass",
             palette: "Midnight",
             named: "ModernDark",
             displayName: "Modern Dark",
@@ -52,7 +53,7 @@ public class ThemePresets {
         )
         
         registry.registerTheme(
-            style: "DefaultStyleClass",
+            style: "ProfessionalStyleClass",
             palette: "Daylight",
             named: "ModernLight",
             displayName: "Modern Light",
