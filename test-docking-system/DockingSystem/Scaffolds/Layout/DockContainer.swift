@@ -69,7 +69,7 @@ public struct DockContainer: View {
 
 // MARK: - Helper Functions
 
-private func isNodeEmptyCheck(_ node: DockLayoutNode) -> Bool {
+func isNodeEmptyCheck(_ node: DockLayoutNode) -> Bool {
     if case .empty = node {
         return true
     }
@@ -90,54 +90,30 @@ struct InteractiveDropZoneOverlay: View {
             Color.black.opacity(0.2)
                 .ignoresSafeArea()
             
-            // Drop zone indicators at edges
-            dropZoneIndicators
+            // Highlight for current drop zone (rendered beneath indicators)
+            currentDropZoneHighlight
+                .zIndex(0)
             
             // Inner panel indicators
             panelSplitIndicators
+                .zIndex(3)
             
-            // Highlight for current drop zone
-            currentDropZoneHighlight
+            // Drop zone indicators at edges
+            dropZoneIndicators
+                .zIndex(2)
         }
         .allowsHitTesting(false)
     }
     
     @ViewBuilder
     private var dropZoneIndicators: some View {
-        // Left indicator
-        DropZoneIndicator(
-            position: .left,
-            isActive: isDropZone(.left),
-            containerSize: containerSize
-        )
-        
-        // Right indicator
-        DropZoneIndicator(
-            position: .right,
-            isActive: isDropZone(.right),
-            containerSize: containerSize
-        )
-        
-        // Top indicator
-        DropZoneIndicator(
-            position: .top,
-            isActive: isDropZone(.top),
-            containerSize: containerSize
-        )
-        
-        // Bottom indicator
-        DropZoneIndicator(
-            position: .bottom,
-            isActive: isDropZone(.bottom),
-            containerSize: containerSize
-        )
-        
-        // Center indicator
-        DropZoneIndicator(
-            position: .center,
-            isActive: isDropZone(.center),
-            containerSize: containerSize
-        )
+        ZStack {
+            DropZoneIndicator(position: .left, isActive: isDropZone(.left), frame: edgeIndicatorFrame(for: .left))
+            DropZoneIndicator(position: .right, isActive: isDropZone(.right), frame: edgeIndicatorFrame(for: .right))
+            DropZoneIndicator(position: .top, isActive: isDropZone(.top), frame: edgeIndicatorFrame(for: .top))
+            DropZoneIndicator(position: .bottom, isActive: isDropZone(.bottom), frame: edgeIndicatorFrame(for: .bottom))
+            DropZoneIndicator(position: .center, isActive: isDropZone(.center), frame: centerIndicatorFrame)
+        }
     }
     
     @ViewBuilder
@@ -151,8 +127,12 @@ struct InteractiveDropZoneOverlay: View {
                     highlightPosition: highlight,
                     isHovered: isHovered
                 )
-                .frame(width: info.frame.width, height: info.frame.height)
+                .frame(
+                    width: max(0, info.frame.width - 32),
+                    height: max(0, info.frame.height - 32)
+                )
                 .position(x: info.frame.midX, y: info.frame.midY)
+                .zIndex(3)
             }
         }
     }
@@ -223,28 +203,117 @@ struct InteractiveDropZoneOverlay: View {
     }
     
     private func dropZoneFrame(for position: DockPosition) -> CGRect {
+        let metrics = layoutMetrics(in: containerSize)
+        return dropZoneFrame(for: position, metrics: metrics, size: containerSize)
+    }
+
+    func dropZoneFrame(for position: DockPosition, metrics: LayoutMetrics, size: CGSize) -> CGRect {
+        let defaultSideWidth = min(250, size.width * 0.25)
+        let defaultVerticalHeight = min(200, size.height * 0.25)
+        let centerFrame = metrics.centerFrame
+        
         switch position {
         case .left:
-            return CGRect(x: 0, y: 0, width: min(250, containerSize.width * 0.25), height: containerSize.height)
-        case .right:
-            let width = min(250, containerSize.width * 0.25)
-            return CGRect(x: containerSize.width - width, y: 0, width: width, height: containerSize.height)
-        case .top:
-            return CGRect(x: 0, y: 0, width: containerSize.width, height: min(200, containerSize.height * 0.25))
-        case .bottom:
-            let height = min(200, containerSize.height * 0.25)
-            return CGRect(x: 0, y: containerSize.height - height, width: containerSize.width, height: height)
-        case .center:
-            let margin = containerSize.width * 0.15
+            let width = metrics.leftDockWidth > 0 ? metrics.leftDockWidth : defaultSideWidth
             return CGRect(
-                x: margin,
-                y: margin,
-                width: containerSize.width - margin * 2,
-                height: containerSize.height - margin * 2
+                x: 0,
+                y: centerFrame.minY,
+                width: width,
+                height: centerFrame.height
             )
+        case .right:
+            let width = metrics.rightDockWidth > 0 ? metrics.rightDockWidth : defaultSideWidth
+            return CGRect(
+                x: max(size.width - width, 0),
+                y: centerFrame.minY,
+                width: width,
+                height: centerFrame.height
+            )
+        case .top:
+            let height = metrics.topHeight > 0 ? metrics.topHeight : defaultVerticalHeight
+            return CGRect(x: 0, y: 0, width: size.width, height: min(height, size.height))
+        case .bottom:
+            let height = metrics.bottomHeight > 0 ? metrics.bottomHeight : defaultVerticalHeight
+            let clampedHeight = min(height, size.height)
+            return CGRect(x: 0, y: max(size.height - clampedHeight, 0), width: size.width, height: clampedHeight)
+        case .center:
+            let margin: CGFloat = 36
+            guard centerFrame.width > 0, centerFrame.height > 0 else { return centerFrame }
+            let insetX = min(margin, centerFrame.width / 2)
+            let insetY = min(margin, centerFrame.height / 2)
+            return centerFrame.insetBy(dx: insetX, dy: insetY)
         case .floating:
             return .zero
         }
+    }
+    
+    func layoutMetrics(in size: CGSize) -> LayoutMetrics {
+        let layout = state.layout
+        let collapsed = theme.spacing.collapsedWidth
+        let leftWidth = isNodeEmptyCheck(layout.leftNode)
+            ? 0
+            : (layout.isLeftCollapsed ? collapsed : layout.leftWidth)
+        let rightWidth = isNodeEmptyCheck(layout.rightNode)
+            ? 0
+            : (layout.isRightCollapsed ? collapsed : layout.rightWidth)
+        let topHeight = isNodeEmptyCheck(layout.topNode)
+            ? 0
+            : (layout.isTopCollapsed ? collapsed : layout.topHeight)
+        let bottomHeight = isNodeEmptyCheck(layout.bottomNode)
+            ? 0
+            : (layout.isBottomCollapsed ? collapsed : layout.bottomHeight)
+        
+        let constrainedLeft = min(max(0, leftWidth), size.width * 0.5)
+        let constrainedRight = min(max(0, rightWidth), size.width * 0.5)
+        let constrainedTop = min(max(0, topHeight), size.height * 0.5)
+        let constrainedBottom = min(max(0, bottomHeight), size.height * 0.5)
+
+        let centerWidth = max(0, size.width - constrainedLeft - constrainedRight)
+        let centerHeight = max(0, size.height - constrainedTop - constrainedBottom)
+        let centerFrame = CGRect(
+            x: constrainedLeft,
+            y: constrainedTop,
+            width: centerWidth,
+            height: centerHeight
+        )
+        
+        return LayoutMetrics(
+            leftDockWidth: constrainedLeft,
+            rightDockWidth: constrainedRight,
+            topHeight: constrainedTop,
+            bottomHeight: constrainedBottom,
+            centerFrame: centerFrame
+        )
+    }
+
+    private func edgeIndicatorFrame(for position: DockPosition) -> CGRect {
+        let frame = dropZoneFrame(for: position)
+        let offset: CGFloat = min(36, min(frame.width, frame.height) / 3)
+        switch position {
+        case .left:
+            return CGRect(x: frame.minX + offset, y: frame.midY, width: 56, height: 56)
+        case .right:
+            return CGRect(x: frame.maxX - offset, y: frame.midY, width: 56, height: 56)
+        case .top:
+            return CGRect(x: frame.midX, y: frame.minY + offset, width: 56, height: 56)
+        case .bottom:
+            return CGRect(x: frame.midX, y: frame.maxY - offset, width: 56, height: 56)
+        default:
+            return CGRect(x: frame.midX, y: frame.midY, width: 56, height: 56)
+        }
+    }
+    
+    private var centerIndicatorFrame: CGRect {
+        let frame = dropZoneFrame(for: .center)
+        return CGRect(x: frame.midX, y: frame.midY, width: 56, height: 56)
+    }
+
+    struct LayoutMetrics {
+        let leftDockWidth: CGFloat
+        let rightDockWidth: CGFloat
+        let topHeight: CGFloat
+        let bottomHeight: CGFloat
+        let centerFrame: CGRect
     }
     
     private func highlightPosition(for panelID: DockPanelID) -> DockPosition? {
@@ -261,45 +330,44 @@ struct InteractiveDropZoneOverlay: View {
     private var panelFrames: [PanelFrameInfo] {
         var frames: [PanelFrameInfo] = []
         let layout = state.layout
-        let size = containerSize
+        let metrics = layoutMetrics(in: containerSize)
         
-        var currentY: CGFloat = 0
-        
-        if !isNodeEmptyCheck(layout.topNode) {
-            let topHeight = layout.isTopCollapsed ? theme.spacing.collapsedWidth : layout.topHeight
-            let topFrame = CGRect(x: 0, y: 0, width: size.width, height: topHeight)
+        if metrics.topHeight > 0, !isNodeEmptyCheck(layout.topNode) {
+            let topFrame = CGRect(x: 0, y: 0, width: containerSize.width, height: metrics.topHeight)
             collectPanelFramesInNode(layout.topNode, frame: topFrame, result: &frames)
-            currentY += topHeight
         }
         
-        var leftWidth: CGFloat = 0
-        var rightWidth: CGFloat = 0
-        
-        if !isNodeEmptyCheck(layout.leftNode) {
-            leftWidth = layout.isLeftCollapsed ? theme.spacing.collapsedWidth : layout.leftWidth
-            let leftFrame = CGRect(x: 0, y: currentY, width: leftWidth, height: size.height - currentY)
+        if metrics.leftDockWidth > 0, metrics.centerFrame.height > 0, !isNodeEmptyCheck(layout.leftNode) {
+            let leftFrame = CGRect(
+                x: 0,
+                y: metrics.centerFrame.minY,
+                width: metrics.leftDockWidth,
+                height: metrics.centerFrame.height
+            )
             collectPanelFramesInNode(layout.leftNode, frame: leftFrame, result: &frames)
         }
         
-        if !isNodeEmptyCheck(layout.rightNode) {
-            rightWidth = layout.isRightCollapsed ? theme.spacing.collapsedWidth : layout.rightWidth
-            let rightFrame = CGRect(x: size.width - rightWidth, y: currentY, width: rightWidth, height: size.height - currentY)
+        if metrics.centerFrame.width > 0, metrics.centerFrame.height > 0, !isNodeEmptyCheck(layout.centerNode) {
+            collectPanelFramesInNode(layout.centerNode, frame: metrics.centerFrame, result: &frames)
+        }
+        
+        if metrics.rightDockWidth > 0, metrics.centerFrame.height > 0, !isNodeEmptyCheck(layout.rightNode) {
+            let rightFrame = CGRect(
+                x: containerSize.width - metrics.rightDockWidth,
+                y: metrics.centerFrame.minY,
+                width: metrics.rightDockWidth,
+                height: metrics.centerFrame.height
+            )
             collectPanelFramesInNode(layout.rightNode, frame: rightFrame, result: &frames)
         }
         
-        if !isNodeEmptyCheck(layout.centerNode) {
-            let centerFrame = CGRect(
-                x: leftWidth,
-                y: currentY,
-                width: size.width - leftWidth - rightWidth,
-                height: size.height - currentY
+        if metrics.bottomHeight > 0, !isNodeEmptyCheck(layout.bottomNode) {
+            let bottomFrame = CGRect(
+                x: 0,
+                y: containerSize.height - metrics.bottomHeight,
+                width: containerSize.width,
+                height: metrics.bottomHeight
             )
-            collectPanelFramesInNode(layout.centerNode, frame: centerFrame, result: &frames)
-        }
-        
-        if !isNodeEmptyCheck(layout.bottomNode) {
-            let bottomHeight = layout.isBottomCollapsed ? theme.spacing.collapsedWidth : layout.bottomHeight
-            let bottomFrame = CGRect(x: 0, y: size.height - bottomHeight, width: size.width, height: bottomHeight)
             collectPanelFramesInNode(layout.bottomNode, frame: bottomFrame, result: &frames)
         }
         
@@ -370,54 +438,52 @@ struct InteractiveDropZoneOverlay: View {
     
     private func findPanelFrame(panelID: DockPanelID) -> CGRect? {
         let layout = state.layout
-        let size = containerSize
+        let metrics = layoutMetrics(in: containerSize)
         
-        var currentY: CGFloat = 0
-        
-        if !isNodeEmptyCheck(layout.topNode) {
-            let topHeight = layout.isTopCollapsed ? theme.spacing.collapsedWidth : layout.topHeight
-            let topFrame = CGRect(x: 0, y: 0, width: size.width, height: topHeight)
+        if metrics.topHeight > 0, !isNodeEmptyCheck(layout.topNode) {
+            let topFrame = CGRect(x: 0, y: 0, width: containerSize.width, height: metrics.topHeight)
             if let frame = findPanelFrameInNode(layout.topNode, panelID: panelID, containerFrame: topFrame) {
                 return frame
             }
-            currentY += topHeight
         }
         
-        var leftWidth: CGFloat = 0
-        var rightWidth: CGFloat = 0
-        
-        if !isNodeEmptyCheck(layout.leftNode) {
-            leftWidth = layout.isLeftCollapsed ? theme.spacing.collapsedWidth : layout.leftWidth
-            let leftFrame = CGRect(x: 0, y: currentY, width: leftWidth, height: size.height - currentY)
+        if metrics.leftDockWidth > 0, metrics.centerFrame.height > 0, !isNodeEmptyCheck(layout.leftNode) {
+            let leftFrame = CGRect(
+                x: 0,
+                y: metrics.centerFrame.minY,
+                width: metrics.leftDockWidth,
+                height: metrics.centerFrame.height
+            )
             if let frame = findPanelFrameInNode(layout.leftNode, panelID: panelID, containerFrame: leftFrame) {
                 return frame
             }
         }
         
-        if !isNodeEmptyCheck(layout.rightNode) {
-            rightWidth = layout.isRightCollapsed ? theme.spacing.collapsedWidth : layout.rightWidth
-            let rightFrame = CGRect(x: size.width - rightWidth, y: currentY, width: rightWidth, height: size.height - currentY)
+        if metrics.centerFrame.width > 0, metrics.centerFrame.height > 0, !isNodeEmptyCheck(layout.centerNode) {
+            if let frame = findPanelFrameInNode(layout.centerNode, panelID: panelID, containerFrame: metrics.centerFrame) {
+                return frame
+            }
+        }
+        
+        if metrics.rightDockWidth > 0, metrics.centerFrame.height > 0, !isNodeEmptyCheck(layout.rightNode) {
+            let rightFrame = CGRect(
+                x: containerSize.width - metrics.rightDockWidth,
+                y: metrics.centerFrame.minY,
+                width: metrics.rightDockWidth,
+                height: metrics.centerFrame.height
+            )
             if let frame = findPanelFrameInNode(layout.rightNode, panelID: panelID, containerFrame: rightFrame) {
                 return frame
             }
         }
         
-        if !isNodeEmptyCheck(layout.centerNode) {
-            let centerFrame = CGRect(
-                x: leftWidth,
-                y: currentY,
-                width: size.width - leftWidth - rightWidth,
-                height: size.height - currentY
+        if metrics.bottomHeight > 0, !isNodeEmptyCheck(layout.bottomNode) {
+            let bottomFrame = CGRect(
+                x: 0,
+                y: containerSize.height - metrics.bottomHeight,
+                width: containerSize.width,
+                height: metrics.bottomHeight
             )
-            
-            if let frame = findPanelFrameInNode(layout.centerNode, panelID: panelID, containerFrame: centerFrame) {
-                return frame
-            }
-        }
-        
-        if !isNodeEmptyCheck(layout.bottomNode) {
-            let bottomHeight = layout.isBottomCollapsed ? theme.spacing.collapsedWidth : layout.bottomHeight
-            let bottomFrame = CGRect(x: 0, y: size.height - bottomHeight, width: size.width, height: bottomHeight)
             if let frame = findPanelFrameInNode(layout.bottomNode, panelID: panelID, containerFrame: bottomFrame) {
                 return frame
             }
@@ -586,27 +652,28 @@ private struct PanelSplitIndicatorView: View {
 struct DropZoneIndicator: View {
     let position: DockPosition
     let isActive: Bool
-    let containerSize: CGSize
+    let frame: CGRect
     @Environment(\.dockTheme) var theme
     
     var body: some View {
-        let frame = indicatorFrame
-        
         ZStack {
-            // Icon
             Image(systemName: iconName)
-                .font(.system(size: 24, weight: .medium))
+                .font(.system(size: 22, weight: .medium))
                 .foregroundColor(isActive ? .white : theme.colors.secondaryText)
         }
-        .frame(width: 60, height: 60)
+        .frame(width: 56, height: 56)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(isActive ? theme.colors.accent : theme.colors.secondaryBackground.opacity(0.9))
-                .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(theme.colors.shadowColor.opacity(0.15), lineWidth: 1)
+                )
+                .shadow(color: theme.colors.shadowColor.opacity(isActive ? 0.6 : 0.35), radius: 8, y: 4)
         )
         .position(x: frame.midX, y: frame.midY)
-        .scaleEffect(isActive ? 1.1 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isActive)
+        .scaleEffect(isActive ? 1.08 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isActive)
     }
     
     private var iconName: String {
@@ -617,24 +684,6 @@ struct DropZoneIndicator: View {
         case .bottom: return "arrow.down.to.line"
         case .center: return "rectangle.center.inset.filled"
         case .floating: return "uiwindow.split.2x1"
-        }
-    }
-    
-    private var indicatorFrame: CGRect {
-        let padding: CGFloat = 40
-        switch position {
-        case .left:
-            return CGRect(x: padding, y: containerSize.height / 2, width: 60, height: 60)
-        case .right:
-            return CGRect(x: containerSize.width - padding, y: containerSize.height / 2, width: 60, height: 60)
-        case .top:
-            return CGRect(x: containerSize.width / 2, y: padding, width: 60, height: 60)
-        case .bottom:
-            return CGRect(x: containerSize.width / 2, y: containerSize.height - padding, width: 60, height: 60)
-        case .center:
-            return CGRect(x: containerSize.width / 2, y: containerSize.height / 2, width: 60, height: 60)
-        case .floating:
-            return .zero
         }
     }
 }
