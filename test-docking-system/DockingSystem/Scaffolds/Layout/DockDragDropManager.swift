@@ -107,10 +107,15 @@ struct DraggablePanelModifier: ViewModifier {
                         }
                         dragOffset = value.translation
                     }
-                    .onEnded { value in
+                    .onEnded { _ in
                         isDragging = false
                         dragOffset = .zero
-                        state.endDrag()
+                        guard state.draggedPanel != nil else { return }
+                        if state.dropZone == .none {
+                            state.cancelDrag()
+                        } else {
+                            state.endDrag()
+                        }
                     }
             )
             .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isDragging)

@@ -294,7 +294,10 @@ public class DockState: ObservableObject {
     }
     
     public func updateDropZone(_ zone: DockDropZone) {
-        dropZone = zone
+        guard dropZone != zone else { return }
+        withAnimation(.easeInOut(duration: 0.12)) {
+            dropZone = zone
+        }
     }
     
     public func endDrag() {

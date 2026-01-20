@@ -1,6 +1,6 @@
 # iOS Docking Panel System
 
-A professional, IDE-quality docking panel system for iOS applications. This system provides flexible, configurable layouts with support for tabbed panels, split views, floating windows, and comprehensive theming.
+A professional IDE-quality docking panel system for iOS applications.
 
 ## Features
 
@@ -9,36 +9,51 @@ A professional, IDE-quality docking panel system for iOS applications. This syst
 - **Split Views**: Nested horizontal and vertical splits with resizable dividers
 - **Drag & Drop**: Panels can be dragged between positions
 - **Floating Windows**: Panels can be detached and floated
-- **Collapsible Regions**: Side panels can collapse to icons
-- **Resizable Panels**: All panel boundaries are resizable
 - **Theming System**: Comprehensive styling with multiple built-in themes
-- **State Management**: Full state management with observable objects
 
 ## Architecture
 
 ```
 DockingSystem/
-├── Core/
-│   ├── DockTypes.swift        # Core types and enums
-│   ├── DockPanel.swift        # Panel and PanelGroup models
-│   ├── DockLayout.swift       # Layout tree structure
-│   └── DockState.swift        # Central state management
-├── Layout/
-│   ├── DockContainer.swift    # Main container view
-│   ├── DockRegionView.swift   # Region rendering
-│   ├── DockSplitView.swift    # Split view implementation
-│   ├── DockResizeHandle.swift # Resize handles
-│   ├── FloatingPanelView.swift # Floating window support
-│   └── DockDragDropManager.swift # Drag & drop mechanics
-├── Styling/
-│   ├── DockTheme.swift        # Theme protocol and implementations
-│   └── DockStyles.swift       # Component style protocols
-└── DockingSystem.swift        # Public API entry point
+├── DockingSystem.swift      # Public API entry point
+├── Scaffolds/               # All structure and logic
+│   ├── Core/               # Types, state, panel models
+│   │   ├── DockTypes.swift
+│   │   ├── DockPanel.swift
+│   │   ├── DockLayout.swift
+│   │   ├── DockState.swift
+│   │   ├── DockExtensions.swift
+│   │   └── DockLayoutPersistence.swift
+│   ├── Layout/             # Container views, layout logic
+│   │   ├── DockContainer.swift
+│   │   ├── DockContainer+Layout.swift
+│   │   ├── DockContainer+Drag.swift
+│   │   ├── DockRegionView.swift
+│   │   ├── DockSplitView.swift
+│   │   ├── DockResizeHandle.swift
+│   │   ├── FloatingPanelView.swift
+│   │   └── DockDragDropManager.swift
+│   └── Components/         # Reusable UI components (future)
+└── Themes/                  # All visual configurations
+    ├── Core/               # Theme protocols, types, environment keys
+    │   ├── DockThemeCore.swift
+    │   ├── DockThemeTypes.swift
+    │   ├── ThemeRegistry.swift
+    │   ├── ThemePresets.swift
+    │   └── View+Theme.swift
+    ├── Default/            # Default theme package
+    │   ├── DefaultDockTheme.swift
+    │   ├── DefaultStyleClass.swift
+    │   ├── ProfessionalStyleClass.swift
+    │   ├── Daylight.swift (light palette)
+    │   └── Midnight.swift (dark palette)
+    └── RetroMacOS9/        # Retro Mac OS 9 theme
+        ├── RetroMaxOS9StyleClass.swift
+        ├── ClassicPlatinum.swift
+        └── BlueGrape.swift
 ```
 
 ## Quick Start
-
-### Basic Usage
 
 ```swift
 import SwiftUI
