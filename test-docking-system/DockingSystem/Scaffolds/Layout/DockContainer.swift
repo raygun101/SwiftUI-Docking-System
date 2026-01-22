@@ -20,7 +20,7 @@ public struct DockContainer: View {
                 mainLayout(in: geometry.size)
                 
                 // Interactive drop zone overlay when dragging
-                if state.draggedPanel != nil {
+                if state.draggedPanel != nil, state.dragHasMoved {
                     InteractiveDropZoneOverlay(
                         containerSize: geometry.size,
                         dragLocation: $dragLocation
@@ -31,7 +31,7 @@ public struct DockContainer: View {
                 floatingPanels(in: geometry.size)
                 
                 // Drag preview
-                if let panel = state.draggedPanel {
+                if let panel = state.draggedPanel, state.dragHasMoved {
                     DragPreviewView(panel: panel, location: dragLocation)
                 }
                 
@@ -43,23 +43,31 @@ public struct DockContainer: View {
             .background(theme.colors.background)
             .onAppear { containerSize = geometry.size }
             .onChange(of: geometry.size) { _, newSize in containerSize = newSize }
-            .gesture(
-                DragGesture(minimumDistance: 0)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 6)
                     .onChanged { value in
-                        if state.draggedPanel != nil {
-                            dragLocation = value.location
-                            updateDropZoneFromLocation(value.location, in: geometry.size)
+                        guard state.draggedPanel != nil || state.pendingDragPanel != nil else { return }
+                        if state.draggedPanel == nil {
+                            state.activatePendingDragIfNeeded()
+                            guard state.draggedPanel != nil else { return }
                         }
+                        if !state.dragHasMoved {
+                            state.markDragMovement()
+                        }
+                        dragLocation = value.location
+                        updateDropZoneFromLocation(value.location, in: geometry.size)
                     }
                     .onEnded { _ in
-                        guard state.draggedPanel != nil else { return }
+                        guard state.draggedPanel != nil || state.pendingDragPanel != nil else { return }
                         
-                        if state.dropZone == .none {
+                        if state.draggedPanel == nil {
+                            state.cancelDrag()
+                        } else if !state.dragHasMoved || state.dropZone == .none {
                             state.cancelDrag()
                         } else {
                             state.endDrag()
                         }
-                        
+
                         dragLocation = .zero
                     }
             )
@@ -566,10 +574,8 @@ private struct PanelSplitIndicatorView: View {
     let isHovered: Bool
     @Environment(\.dockTheme) var theme
     
-    private let edgePadding: CGFloat = 12
-    private let edgeLength: CGFloat = 32
-    private let edgeThickness: CGFloat = 8
-    private let centerSize: CGFloat = 22
+    private let edgePadding: CGFloat = 18
+    private let indicatorSize: CGFloat = 46
     
     var body: some View {
         GeometryReader { geometry in
@@ -580,10 +586,7 @@ private struct PanelSplitIndicatorView: View {
                 edgeIndicator(in: size, position: .bottom, icon: "chevron.down")
                 edgeIndicator(in: size, position: .left, icon: "chevron.left")
                 edgeIndicator(in: size, position: .right, icon: "chevron.right")
-                
-                if highlightPosition == .center {
-                    centerIndicator(in: size)
-                }
+                centerIndicator(in: size)
             }
             .opacity((isHovered || highlightPosition != nil) ? 1 : 0)
             .animation(.easeInOut(duration: 0.12), value: isHovered)
@@ -594,53 +597,49 @@ private struct PanelSplitIndicatorView: View {
     @ViewBuilder
     private func edgeIndicator(in size: CGSize, position: DockPosition, icon: String) -> some View {
         let isActive = highlightPosition == position
-        let baseColor = theme.colors.secondaryBackground.opacity(0.85)
-        let activeColor = theme.colors.accent
-        let textColor = isActive ? Color.white : theme.colors.secondaryText
-        
-        Capsule()
-            .fill(isActive ? activeColor : baseColor)
-            .overlay(
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(textColor)
-            )
-            .frame(width: width(for: position), height: height(for: position))
+        indicatorCard(iconName: icon, isActive: isActive)
             .position(positionPoint(for: position, in: size))
-            .shadow(color: theme.colors.shadowColor.opacity(isActive ? 0.6 : 0.3), radius: 4, y: 2)
-            .scaleEffect(isActive ? 1.1 : 1.0)
     }
     
+    @ViewBuilder
     private func centerIndicator(in size: CGSize) -> some View {
-        RoundedRectangle(cornerRadius: 6)
-            .strokeBorder(theme.colors.accent, lineWidth: 2)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(theme.colors.dropZoneBackground)
+        let isActive = highlightPosition == .center
+        indicatorCard(iconName: "rectangle.center.inset.filled", isActive: isActive)
+            .position(CGPoint(x: size.width / 2, y: size.height / 2))
+    }
+    
+    private func indicatorCard(iconName: String, isActive: Bool) -> some View {
+        let background = isActive ? theme.colors.accent : theme.colors.secondaryBackground.opacity(0.92)
+        let border = theme.colors.shadowColor.opacity(isActive ? 0.2 : 0.35)
+        let iconColor: Color = isActive ? .white : theme.colors.secondaryText
+        
+        return RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(background)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(theme.colors.shadowColor.opacity(0.15), lineWidth: 1)
             )
-            .frame(width: centerSize, height: centerSize)
-            .position(x: size.width / 2, y: size.height / 2)
-            .shadow(color: theme.colors.shadowColor.opacity(0.5), radius: 4, y: 2)
-    }
-    
-    private func width(for position: DockPosition) -> CGFloat {
-        position.isHorizontalEdge ? edgeLength : edgeThickness
-    }
-    
-    private func height(for position: DockPosition) -> CGFloat {
-        position.isHorizontalEdge ? edgeThickness : edgeLength
+            .shadow(color: border, radius: 8, y: 4)
+            .frame(width: indicatorSize, height: indicatorSize)
+            .overlay(
+                Image(systemName: iconName)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(iconColor)
+            )
+            .scaleEffect(isActive ? 1.08 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isActive)
     }
     
     private func positionPoint(for position: DockPosition, in size: CGSize) -> CGPoint {
         switch position {
         case .left:
-            return CGPoint(x: edgePadding + edgeLength / 2, y: size.height / 2)
+            return CGPoint(x: edgePadding + indicatorSize / 2, y: size.height / 2)
         case .right:
-            return CGPoint(x: size.width - edgePadding - edgeLength / 2, y: size.height / 2)
+            return CGPoint(x: size.width - edgePadding - indicatorSize / 2, y: size.height / 2)
         case .top:
-            return CGPoint(x: size.width / 2, y: edgePadding + edgeLength / 2)
+            return CGPoint(x: size.width / 2, y: edgePadding + indicatorSize / 2)
         case .bottom:
-            return CGPoint(x: size.width / 2, y: size.height - edgePadding - edgeLength / 2)
+            return CGPoint(x: size.width / 2, y: size.height - edgePadding - indicatorSize / 2)
         default:
             return CGPoint(x: size.width / 2, y: size.height / 2)
         }

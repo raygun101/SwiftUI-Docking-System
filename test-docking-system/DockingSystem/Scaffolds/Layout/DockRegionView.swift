@@ -233,19 +233,20 @@ struct TabView: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.2)
-                .onEnded { _ in
-                    if panel.visibility.contains(.allowDrag) {
-                        isDragging = true
-                        state.startDrag(panel)
-                        
-                        // Haptic feedback
-                        let generator = UIImpactFeedbackGenerator(style: .medium)
-                        generator.impactOccurred()
-                    }
-                }
-        )
+        .onLongPressGesture(minimumDuration: 0.25, maximumDistance: 24, perform: {
+            guard panel.visibility.contains(.allowDrag) else { return }
+            guard state.draggedPanel?.id != panel.id else { return }
+            isDragging = true
+            state.startDrag(panel)
+            
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+        }, onPressingChanged: { pressing in
+            if !pressing, state.draggedPanel?.id == panel.id, !state.dragHasMoved {
+                isDragging = false
+                state.cancelDrag()
+            }
+        })
         .opacity(state.draggedPanel?.id == panel.id ? 0.4 : 1.0)
         .scaleEffect(state.draggedPanel?.id == panel.id ? 0.95 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: state.draggedPanel?.id)
@@ -311,19 +312,20 @@ struct DockPanelHeader: View {
             alignment: .bottom
         )
         .contentShape(Rectangle())
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.2)
-                .onEnded { _ in
-                    if panel.visibility.contains(.allowDrag) {
-                        isDragging = true
-                        state.startDrag(panel)
-                        
-                        // Haptic feedback
-                        let generator = UIImpactFeedbackGenerator(style: .medium)
-                        generator.impactOccurred()
-                    }
-                }
-        )
+        .onLongPressGesture(minimumDuration: 0.25, maximumDistance: 24, perform: {
+            guard panel.visibility.contains(.allowDrag) else { return }
+            guard state.draggedPanel?.id != panel.id else { return }
+            isDragging = true
+            state.startDrag(panel)
+            
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+        }, onPressingChanged: { pressing in
+            if !pressing, state.draggedPanel?.id == panel.id, !state.dragHasMoved {
+                isDragging = false
+                state.cancelDrag()
+            }
+        })
         .opacity(state.draggedPanel?.id == panel.id ? 0.4 : 1.0)
     }
 }

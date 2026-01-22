@@ -8,7 +8,9 @@ public class DockState: ObservableObject {
     @Published public var layout: DockLayout
     @Published public var activePanel: DockPanel?
     @Published public var draggedPanel: DockPanel?
+    @Published public var pendingDragPanel: DockPanel?
     @Published public var dropZone: DockDropZone = .none
+    @Published private(set) var dragHasMoved: Bool = false
     @Published public var isResizing: Bool = false
     @Published public var resizingPosition: DockPosition?
     
@@ -289,8 +291,32 @@ public class DockState: ObservableObject {
     
     // MARK: - Drag Actions
     
+    public func armDrag(_ panel: DockPanel) {
+        pendingDragPanel = panel
+        draggedPanel = nil
+        dragHasMoved = false
+        dropZone = .none
+    }
+
+    public func activatePendingDragIfNeeded() {
+        if draggedPanel == nil, let panel = pendingDragPanel {
+            draggedPanel = panel
+            pendingDragPanel = nil
+            dragHasMoved = false
+            dropZone = .none
+        }
+    }
+
     public func startDrag(_ panel: DockPanel) {
+        pendingDragPanel = nil
         draggedPanel = panel
+        dragHasMoved = false
+        dropZone = .none
+    }
+
+    public func markDragMovement() {
+        guard draggedPanel != nil else { return }
+        dragHasMoved = true
     }
     
     public func updateDropZone(_ zone: DockDropZone) {
@@ -305,12 +331,16 @@ public class DockState: ObservableObject {
             movePanel(panel, to: dropZone)
         }
         draggedPanel = nil
+        pendingDragPanel = nil
         dropZone = .none
+        dragHasMoved = false
     }
     
     public func cancelDrag() {
         draggedPanel = nil
+        pendingDragPanel = nil
         dropZone = .none
+        dragHasMoved = false
     }
     
     // MARK: - State Persistence
