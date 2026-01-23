@@ -687,38 +687,24 @@ struct DropZoneIndicator: View {
     }
 }
 
-// MARK: - Drag Preview View
+// MARK: - Drag Preview View (Scaffold)
 
 struct DragPreviewView: View {
     let panel: DockPanel
     let location: CGPoint
     @Environment(\.dockTheme) var theme
+    @Environment(\.dockDragPreviewStyle) var dragPreviewStyle
     
     var body: some View {
         if location != .zero {
-            HStack(spacing: 8) {
-                if let icon = panel.icon {
-                    Image(systemName: icon)
-                        .font(.system(size: 16))
-                        .foregroundColor(theme.colors.accent)
-                }
-                
-                Text(panel.title)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(theme.colors.text)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(theme.colors.panelBackground)
-                    .shadow(color: theme.colors.shadowColor, radius: 16, y: 8)
+            let configuration = DockDragPreviewConfiguration(
+                title: panel.title,
+                icon: panel.icon,
+                location: CGPoint(x: location.x, y: location.y - 40)
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(theme.colors.accent, lineWidth: 2)
-            )
-            .position(x: location.x, y: location.y - 40)
+            
+            AnyView(dragPreviewStyle.makeBody(configuration: configuration))
+                .position(x: location.x, y: location.y - 40)
         }
     }
 }

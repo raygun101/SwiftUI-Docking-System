@@ -20,11 +20,15 @@ public protocol DockStyleClass {
     associatedtype TabBar: DockTabBarStyle
     associatedtype ResizeHandle: DockResizeHandleStyle
     associatedtype DropZone: DockDropZoneStyle
+    associatedtype FloatingPanel: DockFloatingPanelStyle
+    associatedtype DragPreview: DockDragPreviewStyle
     
     func makeHeader() -> Header
     func makeTabBar() -> TabBar
     func makeResizeHandle() -> ResizeHandle
     func makeDropZone() -> DropZone
+    func makeFloatingPanel() -> FloatingPanel
+    func makeDragPreview() -> DragPreview
 }
 
 /// Protocol defining colors, typography, spacing, and visual properties
@@ -63,6 +67,18 @@ public protocol DockResizeHandleStyle {
 public protocol DockDropZoneStyle {
     associatedtype Body: View
     func makeBody(configuration: DockDropZoneConfiguration) -> Body
+}
+
+/// Protocol for floating panel styling
+public protocol DockFloatingPanelStyle {
+    associatedtype Body: View
+    func makeBody(configuration: DockFloatingPanelConfiguration) -> Body
+}
+
+/// Protocol for drag preview styling
+public protocol DockDragPreviewStyle {
+    associatedtype Body: View
+    func makeBody(configuration: DockDragPreviewConfiguration) -> Body
 }
 
 // MARK: - Configuration Objects
@@ -109,6 +125,31 @@ public struct DockDropZoneConfiguration {
     public let containerSize: CGSize
 }
 
+public struct DockFloatingPanelConfiguration {
+    public let title: String
+    public let icon: String?
+    public let isActive: Bool
+    public let hasMultipleTabs: Bool
+    public let tabs: [DockTabItem]
+    public let activeTabIndex: Int
+    public let size: CGSize
+    public let content: AnyView
+    
+    // Actions
+    public let onClose: () -> Void
+    public let onMinimize: () -> Void
+    public let onMaximize: () -> Void
+    public let onDock: () -> Void
+    public let onTabSelect: (Int) -> Void
+    public let onTabClose: (Int) -> Void
+}
+
+public struct DockDragPreviewConfiguration {
+    public let title: String
+    public let icon: String?
+    public let location: CGPoint
+}
+
 // MARK: - Composable Theme
 
 /// A theme composed of a style class and palette
@@ -137,6 +178,8 @@ public struct ComposableDockTheme<Style: DockStyleClass, Palette: DockPalette>: 
     public var tabBarStyle: any DockTabBarStyle { styleClass.makeTabBar() }
     public var resizeHandleStyle: any DockResizeHandleStyle { styleClass.makeResizeHandle() }
     public var dropZoneStyle: any DockDropZoneStyle { styleClass.makeDropZone() }
+    public var floatingPanelStyle: any DockFloatingPanelStyle { styleClass.makeFloatingPanel() }
+    public var dragPreviewStyle: any DockDragPreviewStyle { styleClass.makeDragPreview() }
 }
 
 // MARK: - Environment Keys
@@ -193,5 +236,27 @@ public extension EnvironmentValues {
     var dockDropZoneStyle: any DockDropZoneStyle {
         get { self[DockDropZoneStyleKey.self] }
         set { self[DockDropZoneStyleKey.self] = newValue }
+    }
+}
+
+public struct DockFloatingPanelStyleKey: EnvironmentKey {
+    public static let defaultValue: any DockFloatingPanelStyle = DefaultFloatingPanelStyle()
+}
+
+public extension EnvironmentValues {
+    var dockFloatingPanelStyle: any DockFloatingPanelStyle {
+        get { self[DockFloatingPanelStyleKey.self] }
+        set { self[DockFloatingPanelStyleKey.self] = newValue }
+    }
+}
+
+public struct DockDragPreviewStyleKey: EnvironmentKey {
+    public static let defaultValue: any DockDragPreviewStyle = DefaultDragPreviewStyle()
+}
+
+public extension EnvironmentValues {
+    var dockDragPreviewStyle: any DockDragPreviewStyle {
+        get { self[DockDragPreviewStyleKey.self] }
+        set { self[DockDragPreviewStyleKey.self] = newValue }
     }
 }

@@ -785,3 +785,256 @@ struct ProblemRow: View {
         }
     }
 }
+
+// MARK: - Monaco Editor Panel View
+
+/// Panel wrapper for the Monaco code editor
+struct MonacoEditorPanelView: View {
+    @State private var code: String = """
+import SwiftUI
+
+struct ContentView: View {
+    @State private var count = 0
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Hello, World!")
+                .font(.largeTitle)
+                .foregroundColor(.primary)
+            
+            Button("Tap me: \\(count)") {
+                count += 1
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
+    }
+}
+
+#Preview {
+    ContentView()
+}
+"""
+    @State private var selectedLanguage = "swift"
+    @State private var selectedTheme: MonacoTheme = .vsDark
+    @Environment(\.dockTheme) var theme
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Toolbar
+            HStack(spacing: 12) {
+                // Language picker
+                Picker("Language", selection: $selectedLanguage) {
+                    Text("Swift").tag("swift")
+                    Text("JavaScript").tag("javascript")
+                    Text("TypeScript").tag("typescript")
+                    Text("Python").tag("python")
+                    Text("HTML").tag("html")
+                    Text("CSS").tag("css")
+                    Text("JSON").tag("json")
+                }
+                .pickerStyle(.menu)
+                .frame(width: 120)
+                
+                // Theme picker
+                Picker("Theme", selection: $selectedTheme) {
+                    Text("VS Light").tag(MonacoTheme.vs)
+                    Text("VS Dark").tag(MonacoTheme.vsDark)
+                    Text("HC Black").tag(MonacoTheme.hcBlack)
+                    Text("HC Light").tag(MonacoTheme.hcLight)
+                }
+                .pickerStyle(.menu)
+                .frame(width: 100)
+                
+                Spacer()
+                
+                // Character count
+                Text("\(code.count) chars")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(theme.colors.secondaryText)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(theme.colors.tertiaryBackground)
+            
+            // Monaco Editor
+            MonacoEditorView(
+                code: $code,
+                language: selectedLanguage,
+                theme: selectedTheme,
+                readOnly: false
+            )
+        }
+        .background(theme.colors.background)
+    }
+}
+
+// MARK: - HTML Preview Panel View
+
+/// Panel wrapper for HTML preview
+struct HTMLPreviewPanelView: View {
+    @State private var htmlCode: String = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 16px;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Hello, World!</h1>
+        <p>This is a live HTML preview panel. Edit the HTML code to see changes in real-time.</p>
+        <button class="button" onclick="alert('Button clicked!')">Click Me</button>
+    </div>
+</body>
+</html>
+"""
+    @State private var showingEditor = false
+    @Environment(\.dockTheme) var theme
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Toolbar
+            HStack(spacing: 12) {
+                Button(action: { showingEditor.toggle() }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: showingEditor ? "eye" : "pencil")
+                        Text(showingEditor ? "Preview" : "Edit HTML")
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(theme.colors.tertiaryBackground)
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(theme.colors.text)
+                
+                Spacer()
+                
+                Button(action: { htmlCode = sampleHTML }) {
+                    Text("Reset")
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(theme.colors.tertiaryBackground)
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(theme.colors.secondaryText)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(theme.colors.secondaryBackground)
+            
+            // Content
+            if showingEditor {
+                MonacoEditorView(
+                    code: $htmlCode,
+                    language: "html",
+                    theme: .vsDark,
+                    readOnly: false
+                )
+            } else {
+                HTMLPreviewView(
+                    htmlContent: htmlCode,
+                    enableJavaScript: true
+                )
+            }
+        }
+        .background(theme.colors.background)
+    }
+    
+    private var sampleHTML: String {
+        """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+        }
+        h1 { color: #333; margin-bottom: 16px; }
+        p { color: #666; line-height: 1.6; }
+        .button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Hello, World!</h1>
+        <p>This is a live HTML preview panel.</p>
+        <button class="button">Click Me</button>
+    </div>
+</body>
+</html>
+"""
+    }
+}

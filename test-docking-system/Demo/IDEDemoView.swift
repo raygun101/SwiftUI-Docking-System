@@ -115,6 +115,13 @@ struct IDEDemoView: View {
                 Button(action: { addPanel(type: .fileExplorer) }) {
                     Label("File Explorer", systemImage: "folder")
                 }
+                Button(action: { addPanel(type: .codeEditor) }) {
+                    Label("Monaco Editor", systemImage: "chevron.left.forwardslash.chevron.right")
+                }
+                Button(action: { addPanel(type: .htmlPreview) }) {
+                    Label("HTML Preview", systemImage: "globe")
+                }
+                Divider()
                 Button(action: { addPanel(type: .console) }) {
                     Label("Console", systemImage: "terminal")
                 }
@@ -380,6 +387,24 @@ struct IDEDemoView: View {
                 icon: "arrow.triangle.branch",
                 position: .left
             ) { SourceControlView() }
+            
+        case .codeEditor:
+            panel = DockPanel(
+                id: "monaco-\(UUID().uuidString.prefix(4))",
+                title: "Code Editor",
+                icon: "chevron.left.forwardslash.chevron.right",
+                position: .center,
+                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
+            ) { MonacoEditorPanelView() }
+            
+        case .htmlPreview:
+            panel = DockPanel(
+                id: "preview-\(UUID().uuidString.prefix(4))",
+                title: "HTML Preview",
+                icon: "globe",
+                position: .center,
+                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
+            ) { HTMLPreviewPanelView() }
         }
         
         // Float the new panel
@@ -399,7 +424,7 @@ struct IDEDemoView: View {
     }
     
     enum PanelType {
-        case fileExplorer, console, inspector, search, debug, git
+        case fileExplorer, console, inspector, search, debug, git, codeEditor, htmlPreview
     }
     
     private var themePicker: some View {

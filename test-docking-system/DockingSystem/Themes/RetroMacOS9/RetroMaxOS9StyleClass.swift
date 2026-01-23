@@ -20,6 +20,14 @@ public struct RetroMaxOS9StyleClass: DockStyleClass {
     public func makeDropZone() -> RetroMaxOS9DropZoneStyle {
         RetroMaxOS9DropZoneStyle()
     }
+    
+    public func makeFloatingPanel() -> RetroMaxOS9FloatingPanelStyle {
+        RetroMaxOS9FloatingPanelStyle()
+    }
+    
+    public func makeDragPreview() -> RetroMaxOS9DragPreviewStyle {
+        RetroMaxOS9DragPreviewStyle()
+    }
 }
 
 // MARK: - Retro Mac OS 9 Header Style
@@ -363,5 +371,274 @@ private extension View {
                         .frame(width: lineWidth)
                 }
             )
+    }
+}
+
+// MARK: - Retro Mac OS 9 Floating Panel Style
+
+public struct RetroMaxOS9FloatingPanelStyle: DockFloatingPanelStyle {
+    @Environment(\.dockTheme) var theme
+    
+    public func makeBody(configuration: DockFloatingPanelConfiguration) -> some View {
+        VStack(spacing: 0) {
+            // OS9-style title bar
+            retroTitleBar(configuration: configuration)
+            
+            // Tab bar if multiple panels
+            if configuration.hasMultipleTabs {
+                retroFloatingTabBar(configuration: configuration)
+            }
+            
+            // Content area with inset bevel
+            configuration.content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(theme.colors.panelBackground)
+                .retroBevel(
+                    highlight: theme.colors.tertiaryBackground,
+                    shadow: theme.colors.panelBackground
+                )
+                .padding(2)
+        }
+        .frame(width: configuration.size.width, height: configuration.size.height)
+        .background(theme.colors.secondaryBackground)
+        .retroBevel(
+            highlight: theme.colors.panelBackground,
+            shadow: theme.colors.tertiaryBackground,
+            lineWidth: 2
+        )
+        .overlay(
+            Rectangle()
+                .strokeBorder(theme.colors.border, lineWidth: theme.borders.borderWidth)
+        )
+        .shadow(
+            color: theme.colors.shadowColor,
+            radius: theme.shadows.floatingShadowRadius,
+            x: theme.shadows.floatingShadowOffset.width,
+            y: theme.shadows.floatingShadowOffset.height
+        )
+    }
+    
+    @ViewBuilder
+    private func retroTitleBar(configuration: DockFloatingPanelConfiguration) -> some View {
+        let isActive = configuration.isActive
+        let titleBarGradient = LinearGradient(
+            colors: isActive
+                ? [theme.colors.accentSecondary, theme.colors.accent]
+                : [theme.colors.headerBackground, theme.colors.secondaryBackground],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        
+        HStack(spacing: 6) {
+            // OS9 close box (square with X)
+            RetroOS9WindowButton(icon: "xmark", isCloseButton: true, action: configuration.onClose)
+            
+            Spacer()
+            
+            // Title with optional icon
+            HStack(spacing: 4) {
+                if let icon = configuration.icon {
+                    Image(systemName: icon)
+                        .font(.system(size: theme.typography.iconSize, weight: .medium))
+                        .foregroundColor(isActive ? .white : theme.colors.text)
+                }
+                Text(configuration.title)
+                    .font(theme.typography.headerFont)
+                    .fontWeight(theme.typography.headerFontWeight)
+                    .foregroundColor(isActive ? .white : theme.colors.text)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            
+            // OS9-style zoom/collapse boxes
+            HStack(spacing: 2) {
+                RetroOS9WindowButton(icon: "minus", action: configuration.onMinimize)
+                RetroOS9WindowButton(icon: "plus.square", action: configuration.onMaximize)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .background(titleBarGradient)
+        .retroBevel(
+            highlight: isActive ? theme.colors.accentSecondary.opacity(0.6) : theme.colors.panelBackground,
+            shadow: isActive ? theme.colors.tertiaryBackground.opacity(0.8) : theme.colors.tertiaryBackground
+        )
+        .overlay(
+            // Horizontal stripes pattern for active title bar (OS9 style)
+            Group {
+                if isActive {
+                    HStack(spacing: 2) {
+                        ForEach(0..<6, id: \.self) { _ in
+                            Rectangle()
+                                .fill(theme.colors.panelBackground.opacity(0.3))
+                                .frame(width: 1)
+                        }
+                    }
+                    .padding(.horizontal, 40)
+                }
+            }
+        )
+    }
+    
+    @ViewBuilder
+    private func retroFloatingTabBar(configuration: DockFloatingPanelConfiguration) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 0) {
+                ForEach(Array(configuration.tabs.enumerated()), id: \.element.id) { index, tab in
+                    RetroFloatingTabItem(
+                        tab: tab,
+                        isActive: index == configuration.activeTabIndex,
+                        isFirst: index == 0,
+                        isLast: index == configuration.tabs.count - 1,
+                        onSelect: { configuration.onTabSelect(index) },
+                        onClose: { configuration.onTabClose(index) }
+                    )
+                }
+            }
+            .padding(.horizontal, 2)
+            .padding(.vertical, 2)
+        }
+        .background(
+            LinearGradient(
+                colors: [theme.colors.tabBackground, theme.colors.secondaryBackground],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .retroBevel(highlight: theme.colors.panelBackground, shadow: theme.colors.tertiaryBackground)
+    }
+}
+
+// MARK: - Retro OS9 Window Button
+
+private struct RetroOS9WindowButton: View {
+    let icon: String
+    var isCloseButton: Bool = false
+    let action: () -> Void
+    
+    @Environment(\.dockTheme) var theme
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Rectangle()
+                    .fill(isCloseButton ? theme.colors.accent : theme.colors.panelBackground)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(isCloseButton ? .white : theme.colors.text)
+            }
+            .frame(width: 13, height: 13)
+            .retroBevel(
+                highlight: isPressed ? theme.colors.tertiaryBackground : theme.colors.background,
+                shadow: isPressed ? theme.colors.background : theme.colors.tertiaryBackground
+            )
+            .overlay(
+                Rectangle()
+                    .strokeBorder(theme.colors.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+}
+
+// MARK: - Retro Floating Tab Item
+
+private struct RetroFloatingTabItem: View {
+    let tab: DockTabItem
+    let isActive: Bool
+    let isFirst: Bool
+    let isLast: Bool
+    let onSelect: () -> Void
+    let onClose: () -> Void
+    
+    @Environment(\.dockTheme) var theme
+    @State private var isHovered = false
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            if let icon = tab.icon {
+                Image(systemName: icon)
+                    .font(.system(size: max(theme.typography.iconSize - 3, 9), weight: .medium))
+                    .foregroundColor(isActive ? theme.colors.text : theme.colors.secondaryText)
+            }
+            
+            Text(tab.title)
+                .font(theme.typography.tabFont)
+                .fontWeight(theme.typography.tabFontWeight)
+                .foregroundColor(isActive ? theme.colors.text : theme.colors.secondaryText)
+                .lineLimit(1)
+            
+            if isHovered || isActive {
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundColor(theme.colors.tertiaryText)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, theme.spacing.tabPadding)
+        .padding(.vertical, 3)
+        .background(isActive ? theme.colors.activeTabBackground : theme.colors.tabBackground)
+        .retroBevel(
+            highlight: isActive ? theme.colors.panelBackground : theme.colors.background,
+            shadow: theme.colors.tertiaryBackground
+        )
+        .overlay(
+            Group {
+                if !isLast {
+                    Rectangle()
+                        .fill(theme.colors.border)
+                        .frame(width: 1)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+            }
+        )
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onSelect)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+}
+
+// MARK: - Retro Mac OS 9 Drag Preview Style
+
+public struct RetroMaxOS9DragPreviewStyle: DockDragPreviewStyle {
+    @Environment(\.dockTheme) var theme
+    
+    public func makeBody(configuration: DockDragPreviewConfiguration) -> some View {
+        HStack(spacing: 6) {
+            if let icon = configuration.icon {
+                Image(systemName: icon)
+                    .font(.system(size: theme.typography.iconSize, weight: .medium))
+                    .foregroundColor(theme.colors.accent)
+            }
+            
+            Text(configuration.title)
+                .font(theme.typography.headerFont)
+                .fontWeight(theme.typography.headerFontWeight)
+                .foregroundColor(theme.colors.text)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(theme.colors.panelBackground)
+        .retroBevel(
+            highlight: theme.colors.background,
+            shadow: theme.colors.tertiaryBackground
+        )
+        .overlay(
+            Rectangle()
+                .strokeBorder(theme.colors.accent, lineWidth: 2)
+        )
+        .shadow(color: theme.colors.shadowColor, radius: 8, y: 4)
     }
 }
