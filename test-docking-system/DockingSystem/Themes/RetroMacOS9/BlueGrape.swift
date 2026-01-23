@@ -13,45 +13,45 @@ public struct BlueGrape: DockPalette {
     
     public init() {
         self.colors = DockColorScheme(
-            background: Color(red: 0.2, green: 0.2, blue: 0.8),           // Deep blue
-            secondaryBackground: Color(red: 0.3, green: 0.3, blue: 0.9),  // Lighter blue
-            tertiaryBackground: Color(red: 0.4, green: 0.4, blue: 1.0),   // Even lighter blue
-            panelBackground: Color(red: 0.25, green: 0.25, blue: 0.85),    // Panel blue
-            headerBackground: Color(red: 0.3, green: 0.3, blue: 0.9),      // Header blue
-            activeHeaderBackground: Color(red: 0.35, green: 0.35, blue: 0.95), // Active header
-            separator: Color(red: 0.5, green: 0.2, blue: 0.8),            // Grape separator
-            border: Color(red: 0.4, green: 0.3, blue: 0.9),               // Grape border
-            activeBorder: Color(red: 1.0, green: 0.8, blue: 0.2),         // Yellow accent
-            text: Color(red: 1.0, green: 1.0, blue: 1.0),               // White text
-            secondaryText: Color(red: 0.8, green: 0.8, blue: 1.0),          // Light blue text
-            tertiaryText: Color(red: 0.6, green: 0.6, blue: 0.9),           // Medium blue text
-            accent: Color(red: 1.0, green: 0.8, blue: 0.2),                // Yellow accent
-            accentSecondary: Color(red: 1.0, green: 0.9, blue: 0.4),       // Lighter yellow
-            dropZoneHighlight: Color(red: 1.0, green: 0.8, blue: 0.2),     // Yellow highlight
-            dropZoneBackground: Color(red: 1.0, green: 0.8, blue: 0.2).opacity(0.15), // Light yellow
-            resizeHandle: Color(red: 0.6, green: 0.4, blue: 1.0),          // Light grape
-            tabBackground: Color(red: 0.35, green: 0.35, blue: 0.95),      // Tab blue
-            activeTabBackground: Color(red: 0.25, green: 0.25, blue: 0.85), // Active tab
-            hoverBackground: Color(red: 0.4, green: 0.4, blue: 1.0),       // Hover state
-            shadowColor: Color.black.opacity(0.4)                           // Darker shadows
+            background: Color(hex: 0x2C2E82),           // Deep blue grape
+            secondaryBackground: Color(hex: 0x3C3E97),  // Lighter blue
+            tertiaryBackground: Color(hex: 0x4D4FB2),   // Even lighter blue
+            panelBackground: Color(hex: 0x34368B),    // Panel blue
+            headerBackground: Color(hex: 0x3A3D97),      // Header blue
+            activeHeaderBackground: Color(hex: 0x4A4FB0), // Active header
+            separator: Color(hex: 0x5B4A9E),            // Grape separator
+            border: Color(hex: 0x4E4A99),               // Grape border
+            activeBorder: Color(hex: 0xF4C44D),         // Yellow accent
+            text: Color(hex: 0xFFFFFF),               // White text
+            secondaryText: Color(hex: 0xD6D7F4),          // Light blue text
+            tertiaryText: Color(hex: 0xAEB0E6),           // Medium blue text
+            accent: Color(hex: 0xF4C44D),                // Yellow accent
+            accentSecondary: Color(hex: 0xF8D87A),       // Lighter yellow
+            dropZoneHighlight: Color(hex: 0xF4C44D),     // Yellow highlight
+            dropZoneBackground: Color(hex: 0xF4C44D, opacity: 0.18), // Light yellow
+            resizeHandle: Color(hex: 0x7A72D2),          // Light grape
+            tabBackground: Color(hex: 0x3B3E9C),      // Tab blue
+            activeTabBackground: Color(hex: 0x34368B), // Active tab
+            hoverBackground: Color(hex: 0x5053B8),       // Hover state
+            shadowColor: Color.black.opacity(0.35)                           // Darker shadows
         )
         
         self.typography = DockTypography(
-            headerFont: .system(size: 12, weight: .medium, design: .default), // Chicago-style
-            headerFontWeight: .medium,
+            headerFont: .system(size: 12, weight: .semibold, design: .default), // Chicago-style
+            headerFontWeight: .semibold,
             tabFont: .system(size: 11, weight: .medium, design: .default),      // Geneva-style
             tabFontWeight: .medium,
             iconSize: 12
         )
         
         self.spacing = DockSpacing(
-            headerPadding: 8,        // Compact padding
+            headerPadding: 6,        // Compact padding
             tabPadding: 6,           // Tight tab padding
-            resizeHandleSize: 3,     // Thin resize handles
-            panelPadding: 12,        // Standard panel padding
-            collapsedWidth: 44,      // Classic collapsed width
-            minPanelSize: 150,       // Smaller minimum size
-            dropZoneMargin: 60       // Smaller drop zone margin
+            resizeHandleSize: 4,     // Slightly thicker handles
+            panelPadding: 10,        // Standard panel padding
+            collapsedWidth: 42,      // Classic collapsed width
+            minPanelSize: 140,       // Smaller minimum size
+            dropZoneMargin: 56       // Smaller drop zone margin
         )
         
         self.borders = DockBorders(
@@ -61,11 +61,11 @@ public struct BlueGrape: DockPalette {
         )
         
         self.shadows = DockShadows(
-            panelShadowRadius: 2,    // Subtle shadows
+            panelShadowRadius: 1.5,    // Subtle shadows
             panelShadowOffset: CGSize(width: 0, height: 1),
-            panelShadowOpacity: 0.2,
-            floatingShadowRadius: 4,  // Slightly larger for floating
-            floatingShadowOffset: CGSize(width: 0, height: 2),
+            panelShadowOpacity: 0.22,
+            floatingShadowRadius: 6,  // Slightly larger for floating
+            floatingShadowOffset: CGSize(width: 0, height: 3),
             floatingShadowOpacity: 0.3
         )
         

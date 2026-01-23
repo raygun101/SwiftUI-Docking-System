@@ -28,101 +28,77 @@ public struct RetroMaxOS9HeaderStyle: DockHeaderStyle {
     @Environment(\.dockTheme) var theme
     
     public func makeBody(configuration: DockHeaderConfiguration) -> some View {
-        VStack(spacing: 0) {
-            // Top beveled edge
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(theme.colors.accent)
-                    .frame(height: 1)
-                Rectangle()
-                    .fill(theme.colors.background)
-                    .frame(height: 1)
+        let isActive = configuration.isActive
+        let titleColor = isActive ? Color.white : theme.colors.text
+        let iconColor = isActive ? Color.white : theme.colors.secondaryText
+        let headerGradient = LinearGradient(
+            colors: isActive
+                ? [theme.colors.accentSecondary, theme.colors.accent]
+                : [theme.colors.headerBackground, theme.colors.secondaryBackground],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        let bevelHighlight = isActive
+            ? theme.colors.accentSecondary.opacity(0.7)
+            : theme.colors.panelBackground
+        let bevelShadow = isActive
+            ? theme.colors.tertiaryBackground.opacity(0.85)
+            : theme.colors.tertiaryBackground
+
+        return HStack(spacing: 6) {
+            if let icon = configuration.icon {
+                RetroIcon(systemName: icon, color: iconColor)
             }
-            
-            // Main header content
-            HStack(spacing: 0) {
-                // Left beveled edge
-                VStack(spacing: 0) {
-                    Rectangle()
-                        .fill(theme.colors.accent)
-                        .frame(width: 1)
-                    Rectangle()
-                        .fill(theme.colors.background)
-                        .frame(width: 1)
+
+            Text(configuration.title)
+                .font(theme.typography.headerFont)
+                .fontWeight(theme.typography.headerFontWeight)
+                .foregroundColor(titleColor)
+                .lineLimit(1)
+
+            Spacer()
+
+            HStack(spacing: 4) {
+                if configuration.visibility.contains(.showCollapseButton) {
+                    RetroButton(
+                        icon: configuration.isCollapsed ? "chevron.down" : "chevron.up",
+                        action: configuration.onCollapse
+                    )
                 }
-                
-                // Content area
-                HStack(spacing: 8) {
-                    HStack(spacing: 4) {
-                        if let icon = configuration.icon {
-                            RetroIcon(systemName: icon, isActive: configuration.isActive)
-                        }
-                        
-                        Text(configuration.title)
-                            .font(.system(size: 12, weight: .medium, design: .default))
-                            .foregroundColor(configuration.isActive ? theme.colors.text : theme.colors.secondaryText)
-                    }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 4) {
-                        if configuration.visibility.contains(.showCollapseButton) {
-                            RetroButton(
-                                icon: configuration.isCollapsed ? "chevron.down" : "chevron.up",
-                                action: configuration.onCollapse
-                            )
-                        }
-                        
-                        if configuration.visibility.contains(.showMaximizeButton) {
-                            RetroButton(
-                                icon: "arrow.up.left.and.arrow.down.right",
-                                action: configuration.onMaximize
-                            )
-                        }
-                        
-                        if configuration.visibility.contains(.allowFloat) {
-                            RetroButton(
-                                icon: "uiwindow.split.2x1",
-                                action: configuration.onFloat
-                            )
-                        }
-                        
-                        if configuration.visibility.contains(.showCloseButton) {
-                            RetroButton(
-                                icon: "xmark",
-                                action: configuration.onClose,
-                                isCloseButton: true
-                            )
-                        }
-                    }
+
+                if configuration.visibility.contains(.showMaximizeButton) {
+                    RetroButton(
+                        icon: "arrow.up.left.and.arrow.down.right",
+                        action: configuration.onMaximize
+                    )
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    configuration.isActive ? theme.colors.activeHeaderBackground : theme.colors.headerBackground
-                )
-                
-                // Right beveled edge
-                VStack(spacing: 0) {
-                    Rectangle()
-                        .fill(theme.colors.background)
-                        .frame(width: 1)
-                    Rectangle()
-                        .fill(theme.colors.accent)
-                        .frame(width: 1)
+
+                if configuration.visibility.contains(.allowFloat) {
+                    RetroButton(
+                        icon: "uiwindow.split.2x1",
+                        action: configuration.onFloat
+                    )
                 }
-            }
-            
-            // Bottom beveled edge
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(theme.colors.background)
-                    .frame(height: 1)
-                Rectangle()
-                    .fill(theme.colors.accent)
-                    .frame(height: 1)
+
+                if configuration.visibility.contains(.showCloseButton) {
+                    RetroButton(
+                        icon: "xmark",
+                        action: configuration.onClose,
+                        isCloseButton: true
+                    )
+                }
             }
         }
+        .padding(.horizontal, theme.spacing.headerPadding)
+        .padding(.vertical, max(theme.spacing.headerPadding - 3, 4))
+        .background(headerGradient)
+        .retroBevel(highlight: bevelHighlight, shadow: bevelShadow)
+        .overlay(
+            Rectangle()
+                .fill(theme.colors.border)
+                .frame(height: theme.borders.separatorWidth),
+            alignment: .bottom
+        )
     }
 }
 
@@ -133,16 +109,6 @@ public struct RetroMaxOS9TabBarStyle: DockTabBarStyle {
     
     public func makeBody(configuration: DockTabBarConfiguration) -> some View {
         VStack(spacing: 0) {
-            // Top beveled edge
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(theme.colors.accent)
-                    .frame(height: 1)
-                Rectangle()
-                    .fill(theme.colors.background)
-                    .frame(height: 1)
-            }
-            
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
                     ForEach(Array(configuration.tabs.enumerated()), id: \.element.id) { index, tab in
@@ -156,19 +122,24 @@ public struct RetroMaxOS9TabBarStyle: DockTabBarStyle {
                         )
                     }
                 }
-            }
-            .background(theme.colors.tabBackground)
-            
-            // Bottom beveled edge
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(theme.colors.background)
-                    .frame(height: 1)
-                Rectangle()
-                    .fill(theme.colors.accent)
-                    .frame(height: 1)
+                .padding(.vertical, 2)
+                .padding(.horizontal, 2)
             }
         }
+        .background(
+            LinearGradient(
+                colors: [theme.colors.tabBackground, theme.colors.secondaryBackground],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .retroBevel(highlight: theme.colors.panelBackground, shadow: theme.colors.tertiaryBackground)
+        .overlay(
+            Rectangle()
+                .fill(theme.colors.border)
+                .frame(height: theme.borders.separatorWidth),
+            alignment: .bottom
+        )
     }
 }
 
@@ -180,34 +151,36 @@ public struct RetroMaxOS9ResizeHandleStyle: DockResizeHandleStyle {
     public func makeBody(configuration: DockResizeHandleConfiguration) -> some View {
         Group {
             if configuration.orientation == .horizontal {
+                let thickness = max(theme.spacing.resizeHandleSize, 4)
                 VStack(spacing: 0) {
                     Rectangle()
-                        .fill(theme.colors.accent)
+                        .fill(theme.colors.panelBackground)
                         .frame(height: 1)
                     Rectangle()
                         .fill(theme.colors.resizeHandle)
-                        .frame(height: 3)
+                        .frame(height: thickness - 2)
                     Rectangle()
-                        .fill(theme.colors.background)
+                        .fill(theme.colors.tertiaryBackground)
                         .frame(height: 1)
                 }
                 .frame(maxWidth: .infinity)
             } else {
+                let thickness = max(theme.spacing.resizeHandleSize, 4)
                 HStack(spacing: 0) {
                     Rectangle()
-                        .fill(theme.colors.accent)
+                        .fill(theme.colors.panelBackground)
                         .frame(width: 1)
                     Rectangle()
                         .fill(theme.colors.resizeHandle)
-                        .frame(width: 3)
+                        .frame(width: thickness - 2)
                     Rectangle()
-                        .fill(theme.colors.background)
+                        .fill(theme.colors.tertiaryBackground)
                         .frame(width: 1)
                 }
                 .frame(maxHeight: .infinity)
             }
         }
-        .opacity(configuration.isHovered ? 1.0 : 0.7)
+        .opacity(configuration.isHovered ? 1.0 : 0.75)
         .animation(.easeInOut(duration: theme.animations.quickDuration), value: configuration.isHovered)
     }
 }
@@ -220,38 +193,23 @@ public struct RetroMaxOS9DropZoneStyle: DockDropZoneStyle {
     public func makeBody(configuration: DockDropZoneConfiguration) -> some View {
         Group {
             if configuration.isActive {
-                VStack(spacing: 0) {
-                    // Top beveled edge
-                    HStack(spacing: 0) {
+                Rectangle()
+                    .fill(theme.colors.dropZoneBackground)
+                    .retroBevel(
+                        highlight: theme.colors.panelBackground.opacity(0.8),
+                        shadow: theme.colors.tertiaryBackground
+                    )
+                    .overlay(
                         Rectangle()
-                            .fill(theme.colors.accent)
-                            .frame(height: 2)
+                            .strokeBorder(
+                                theme.colors.dropZoneHighlight,
+                                style: StrokeStyle(lineWidth: 2, dash: [5, 3])
+                            )
+                    )
+                    .overlay(
                         Rectangle()
-                            .fill(theme.colors.background)
-                            .frame(height: 2)
-                    }
-                    
-                    // Main drop zone
-                    RoundedRectangle(cornerRadius: 0)
-                        .fill(theme.colors.dropZoneBackground)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 0)
-                                .strokeBorder(
-                                    theme.colors.dropZoneHighlight,
-                                    style: StrokeStyle(lineWidth: 2, dash: [6, 3])
-                                )
-                        )
-                    
-                    // Bottom beveled edge
-                    HStack(spacing: 0) {
-                        Rectangle()
-                            .fill(theme.colors.background)
-                            .frame(height: 2)
-                        Rectangle()
-                            .fill(theme.colors.accent)
-                            .frame(height: 2)
-                    }
-                }
+                            .strokeBorder(theme.colors.border, lineWidth: theme.borders.borderWidth)
+                    )
                 .animation(.easeInOut(duration: theme.animations.defaultDuration), value: configuration.isActive)
             }
         }
@@ -262,14 +220,14 @@ public struct RetroMaxOS9DropZoneStyle: DockDropZoneStyle {
 
 private struct RetroIcon: View {
     let systemName: String
-    let isActive: Bool
-    
+    let color: Color
+
     @Environment(\.dockTheme) var theme
-    
+
     var body: some View {
         Image(systemName: systemName)
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(isActive ? theme.colors.accent : theme.colors.secondaryText)
+            .font(.system(size: theme.typography.iconSize, weight: .medium))
+            .foregroundColor(color)
     }
 }
 
@@ -289,53 +247,23 @@ private struct RetroButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 0) {
-                // Top beveled edge
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(isPressed ? theme.colors.background : theme.colors.accent)
-                        .frame(width: 1, height: 1)
-                    Rectangle()
-                        .fill(isPressed ? theme.colors.accent : theme.colors.background)
-                        .frame(width: 14, height: 1)
-                    Rectangle()
-                        .fill(isPressed ? theme.colors.accent : theme.colors.background)
-                        .frame(width: 1, height: 1)
-                }
-                
-                // Button content
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(isPressed ? theme.colors.accent : theme.colors.background)
-                        .frame(width: 1, height: 14)
-                    
-                    Image(systemName: icon)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(isCloseButton ? .white : theme.colors.text)
-                        .frame(width: 14, height: 14)
-                        .background(
-                            isCloseButton ? theme.colors.accent : 
-                            (isPressed ? theme.colors.hoverBackground : theme.colors.tabBackground)
-                        )
-                    
-                    Rectangle()
-                        .fill(isPressed ? theme.colors.background : theme.colors.accent)
-                        .frame(width: 1, height: 14)
-                }
-                
-                // Bottom beveled edge
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(isPressed ? theme.colors.accent : theme.colors.background)
-                        .frame(width: 1, height: 1)
-                    Rectangle()
-                        .fill(isPressed ? theme.colors.background : theme.colors.accent)
-                        .frame(width: 14, height: 1)
-                    Rectangle()
-                        .fill(isPressed ? theme.colors.background : theme.colors.accent)
-                        .frame(width: 1, height: 1)
-                }
+            ZStack {
+                Rectangle()
+                    .fill(isCloseButton ? theme.colors.accent : theme.colors.panelBackground)
+
+                Image(systemName: icon)
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(isCloseButton ? .white : theme.colors.text)
             }
+            .frame(width: 14, height: 14)
+            .retroBevel(
+                highlight: isPressed ? theme.colors.tertiaryBackground : theme.colors.background,
+                shadow: isPressed ? theme.colors.background : theme.colors.tertiaryBackground
+            )
+            .overlay(
+                Rectangle()
+                    .strokeBorder(theme.colors.border, lineWidth: theme.borders.borderWidth)
+            )
         }
         .buttonStyle(.plain)
         .onTapGesture {
@@ -363,63 +291,77 @@ private struct RetroTabButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 0) {
-                // Top beveled edge
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(isActive ? theme.colors.accent : theme.colors.background)
-                        .frame(height: 1)
-                    Rectangle()
-                        .fill(isActive ? theme.colors.background : theme.colors.tabBackground)
-                        .frame(height: 1)
-                    Rectangle()
-                        .fill(isActive ? theme.colors.background : theme.colors.accent)
-                        .frame(height: 1)
+            HStack(spacing: 4) {
+                if let icon = icon {
+                    Image(systemName: icon)
+                        .font(.system(size: max(theme.typography.iconSize - 3, 9), weight: .medium))
+                        .foregroundColor(isActive ? theme.colors.text : theme.colors.secondaryText)
                 }
-                
-                // Tab content
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(isActive ? theme.colors.background : theme.colors.accent)
-                        .frame(width: 1)
-                    
-                    HStack(spacing: 4) {
-                        if let icon = icon {
-                            Image(systemName: icon)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(isActive ? theme.colors.text : theme.colors.secondaryText)
-                        }
-                        
-                        Text(title)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(isActive ? theme.colors.text : theme.colors.secondaryText)
-                            .lineLimit(1)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(
-                        isActive ? theme.colors.activeTabBackground : theme.colors.tabBackground
-                    )
-                    
-                    Rectangle()
-                        .fill(isActive ? theme.colors.accent : theme.colors.background)
-                        .frame(width: 1)
-                }
-                
-                // Bottom beveled edge
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(isActive ? theme.colors.background : theme.colors.accent)
-                        .frame(height: 1)
-                    Rectangle()
-                        .fill(isActive ? theme.colors.accent : theme.colors.background)
-                        .frame(height: 1)
-                    Rectangle()
-                        .fill(isActive ? theme.colors.accent : theme.colors.background)
-                        .frame(height: 1)
-                }
+
+                Text(title)
+                    .font(theme.typography.tabFont)
+                    .fontWeight(theme.typography.tabFontWeight)
+                    .foregroundColor(isActive ? theme.colors.text : theme.colors.secondaryText)
+                    .lineLimit(1)
             }
+            .padding(.horizontal, theme.spacing.tabPadding)
+            .padding(.vertical, 3)
+            .padding(.leading, isFirst ? 2 : 0)
+            .frame(minHeight: 18)
+            .background(isActive ? theme.colors.activeTabBackground : theme.colors.tabBackground)
+            .retroBevel(
+                highlight: isActive ? theme.colors.panelBackground : theme.colors.background,
+                shadow: theme.colors.tertiaryBackground
+            )
+            .overlay(
+                Group {
+                    if !isActive {
+                        Rectangle()
+                            .fill(theme.colors.border)
+                            .frame(height: theme.borders.separatorWidth)
+                            .frame(maxHeight: .infinity, alignment: .bottom)
+                    }
+                }
+            )
+            .overlay(
+                Group {
+                    if !isLast {
+                        Rectangle()
+                            .fill(theme.colors.border)
+                            .frame(width: theme.borders.separatorWidth)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                }
+            )
         }
         .buttonStyle(.plain)
+    }
+}
+
+private extension View {
+    func retroBevel(highlight: Color, shadow: Color, lineWidth: CGFloat = 1) -> some View {
+        self
+            .overlay(
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(highlight)
+                        .frame(height: lineWidth)
+                    Spacer(minLength: 0)
+                    Rectangle()
+                        .fill(shadow)
+                        .frame(height: lineWidth)
+                }
+            )
+            .overlay(
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(highlight)
+                        .frame(width: lineWidth)
+                    Spacer(minLength: 0)
+                    Rectangle()
+                        .fill(shadow)
+                        .frame(width: lineWidth)
+                }
+            )
     }
 }
