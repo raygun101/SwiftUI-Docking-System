@@ -17,6 +17,7 @@ struct FloatingPanelView: View {
     @State private var dragStartPosition: CGPoint = .zero
     @State private var isResizing = false
     @State private var resizeStartSize: CGSize = .zero
+    @State private var resizeStartLocation: CGPoint = .zero
     
     var body: some View {
         let configuration = makeConfiguration()
@@ -102,6 +103,7 @@ struct FloatingPanelView: View {
                 // Constrain to container bounds
                 position.x = max(0, min(containerSize.width - size.width, position.x))
                 position.y = max(0, min(containerSize.height - size.height, position.y))
+                persistFloatingFrame()
             }
     }
     
@@ -127,19 +129,29 @@ struct FloatingPanelView: View {
             .frame(width: 16, height: 16)
             .contentShape(Rectangle())
             .gesture(
-                DragGesture(minimumDistance: 1)
+                DragGesture(minimumDistance: 0, coordinateSpace: .global)
                     .onChanged { value in
                         if !isResizing {
                             isResizing = true
                             resizeStartSize = size
+                            resizeStartLocation = value.startLocation
                         }
                         
-                        let newWidth = max(200, resizeStartSize.width + value.translation.width)
-                        let newHeight = max(150, resizeStartSize.height + value.translation.height)
+                        let deltaX = value.location.x - resizeStartLocation.x
+                        let deltaY = value.location.y - resizeStartLocation.y
+                        let proposedWidth = resizeStartSize.width + deltaX
+                        let proposedHeight = resizeStartSize.height + deltaY
+                        let maxWidth = max(200, containerSize.width - position.x)
+                        let maxHeight = max(150, containerSize.height - position.y)
+                        let newWidth = min(max(200, proposedWidth), maxWidth)
+                        let newHeight = min(max(150, proposedHeight), maxHeight)
                         size = CGSize(width: newWidth, height: newHeight)
                     }
                     .onEnded { _ in
                         isResizing = false
+                        size.width = min(size.width, containerSize.width - position.x)
+                        size.height = min(size.height, containerSize.height - position.y)
+                        persistFloatingFrame()
                     }
             )
             .padding(4)
@@ -173,6 +185,12 @@ struct FloatingPanelView: View {
     private func dockPanel() {
         if let panel = group.activePanel {
             state.dockPanel(panel, to: .right)
+        }
+    }
+    
+    private func persistFloatingFrame() {
+        if let panel = group.activePanel {
+            panel.floatingFrame = CGRect(origin: position, size: size)
         }
     }
 }
