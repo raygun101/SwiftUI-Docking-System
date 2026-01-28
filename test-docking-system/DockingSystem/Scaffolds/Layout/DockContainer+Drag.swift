@@ -4,19 +4,53 @@ extension DockContainer {
     func updateDropZoneFromLocation(_ location: CGPoint, in size: CGSize) {
         let edgeThreshold: CGFloat = 80
         
-        if location.x < edgeThreshold {
-            state.updateDropZone(.position(.left))
-        } else if location.x > size.width - edgeThreshold {
-            state.updateDropZone(.position(.right))
-        } else if location.y < edgeThreshold {
-            state.updateDropZone(.position(.top))
-        } else if location.y > size.height - edgeThreshold {
-            state.updateDropZone(.position(.bottom))
-        } else if let splitDropZone = findSplitDropZone(at: location, in: size) {
+        if let splitDropZone = findSplitDropZone(at: location, in: size) {
             state.updateDropZone(splitDropZone)
-        } else {
-            state.updateDropZone(.position(.center))
+            return
         }
+        
+        let innerEdgeSafeZone: CGFloat = edgeThreshold - 20
+        if location.x < edgeThreshold {
+            let shouldPreferInner = location.x > innerEdgeSafeZone
+            if shouldPreferInner {
+                state.updateDropZone(.position(.center))
+            } else {
+                state.updateDropZone(.position(.left))
+            }
+            return
+        }
+        
+        if location.x > size.width - edgeThreshold {
+            let shouldPreferInner = location.x < size.width - innerEdgeSafeZone
+            if shouldPreferInner {
+                state.updateDropZone(.position(.center))
+            } else {
+                state.updateDropZone(.position(.right))
+            }
+            return
+        }
+        
+        if location.y < edgeThreshold {
+            let shouldPreferInner = location.y > innerEdgeSafeZone
+            if shouldPreferInner {
+                state.updateDropZone(.position(.center))
+            } else {
+                state.updateDropZone(.position(.top))
+            }
+            return
+        }
+        
+        if location.y > size.height - edgeThreshold {
+            let shouldPreferInner = location.y < size.height - innerEdgeSafeZone
+            if shouldPreferInner {
+                state.updateDropZone(.position(.center))
+            } else {
+                state.updateDropZone(.position(.bottom))
+            }
+            return
+        }
+        
+        state.updateDropZone(.position(.center))
     }
     
     private func findSplitDropZone(at location: CGPoint, in size: CGSize) -> DockDropZone? {
@@ -161,6 +195,14 @@ extension DockContainer {
         let panelSize = panelFrame.size
         let threshold: CGFloat = 40
         
+        if let innerDropZone = innerIndicatorDropZone(
+            for: panel,
+            localLocation: localLocation,
+            panelSize: panelSize
+        ) {
+            return innerDropZone
+        }
+        
         if localLocation.x < threshold {
             return .split(panelID: panel.id, position: .left)
         } else if localLocation.x > panelSize.width - threshold {
@@ -172,6 +214,80 @@ extension DockContainer {
         }
         
         return .tab(panelID: panel.id, index: 0)
+    }
+
+    private func innerIndicatorDropZone(
+        for panel: DockPanel,
+        localLocation: CGPoint,
+        panelSize: CGSize
+    ) -> DockDropZone? {
+        let indicatorMargin: CGFloat = 16
+        let indicatorSize = CGSize(
+            width: max(panelSize.width - indicatorMargin * 2, 0),
+            height: max(panelSize.height - indicatorMargin * 2, 0)
+        )
+        guard indicatorSize.width > 0, indicatorSize.height > 0 else { return nil }
+        let indicatorPoint = CGPoint(
+            x: localLocation.x - indicatorMargin,
+            y: localLocation.y - indicatorMargin
+        )
+        guard indicatorPoint.x >= 0,
+              indicatorPoint.y >= 0,
+              indicatorPoint.x <= indicatorSize.width,
+              indicatorPoint.y <= indicatorSize.height else {
+            return nil
+        }
+        
+        let edgePadding: CGFloat = 18
+        let indicatorDiameter: CGFloat = 46
+        let hitExpansion: CGFloat = 10
+        let centerX = indicatorSize.width / 2
+        let centerY = indicatorSize.height / 2
+        
+        func rectAround(center: CGPoint) -> CGRect {
+            CGRect(
+                x: center.x - indicatorDiameter / 2 - hitExpansion,
+                y: center.y - indicatorDiameter / 2 - hitExpansion,
+                width: indicatorDiameter + hitExpansion * 2,
+                height: indicatorDiameter + hitExpansion * 2
+            )
+        }
+        
+        let leftCenter = CGPoint(
+            x: max(edgePadding + indicatorDiameter / 2, indicatorDiameter / 2),
+            y: centerY
+        )
+        let rightCenter = CGPoint(
+            x: min(indicatorSize.width - edgePadding - indicatorDiameter / 2, indicatorSize.width - indicatorDiameter / 2),
+            y: centerY
+        )
+        let topCenter = CGPoint(
+            x: centerX,
+            y: max(edgePadding + indicatorDiameter / 2, indicatorDiameter / 2)
+        )
+        let bottomCenter = CGPoint(
+            x: centerX,
+            y: min(indicatorSize.height - edgePadding - indicatorDiameter / 2, indicatorSize.height - indicatorDiameter / 2)
+        )
+        let middleCenter = CGPoint(x: centerX, y: centerY)
+        
+        if rectAround(center: leftCenter).contains(indicatorPoint) {
+            return .split(panelID: panel.id, position: .left)
+        }
+        if rectAround(center: rightCenter).contains(indicatorPoint) {
+            return .split(panelID: panel.id, position: .right)
+        }
+        if rectAround(center: topCenter).contains(indicatorPoint) {
+            return .split(panelID: panel.id, position: .top)
+        }
+        if rectAround(center: bottomCenter).contains(indicatorPoint) {
+            return .split(panelID: panel.id, position: .bottom)
+        }
+        if rectAround(center: middleCenter).contains(indicatorPoint) {
+            return .tab(panelID: panel.id, index: 0)
+        }
+        
+        return nil
     }
     
     private func dragLayoutMetrics(in size: CGSize) -> DragLayoutMetrics {
