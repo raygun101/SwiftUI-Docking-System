@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Web App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <span class="logo-icon">🚀</span>
+                <span class="logo-text">WebApp</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home" class="active">Home</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1>Welcome to WebApp</h1>
+                <p class="hero-subtitle">Build amazing things with modern web technologies</p>
+                <button class="btn btn-primary" onclick="showMessage()">Get Started</button>
+            </div>
+            <div class="hero-image">
+                <div class="floating-card">
+                    <div class="card-icon">✨</div>
+                    <div class="card-text">Interactive Demo</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <h2>Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Fast</h3>
+                    <p>Lightning-fast performance with optimized code</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Beautiful</h3>
+                    <p>Modern UI with smooth animations</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Responsive</h3>
+                    <p>Works perfectly on all devices</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure</h3>
+                    <p>Built with security best practices</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="about">
+            <h2>About</h2>
+            <div class="about-content">
+                <p>This is a demo web project created to showcase the mobile IDE capabilities. 
+                   You can edit HTML, CSS, and JavaScript files and see live preview updates.</p>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-number" id="counter1">0</span>
+                        <span class="stat-label">Users</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="counter2">0</span>
+                        <span class="stat-label">Projects</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="counter3">0</span>
+                        <span class="stat-label">Downloads</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="contact">
+            <h2>Contact Us</h2>
+            <form class="contact-form" onsubmit="handleSubmit(event)">
+                <input type="text" placeholder="Your Name" required>
+                <input type="email" placeholder="Your Email" required>
+                <textarea placeholder="Your Message" rows="4" required></textarea>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+            </form>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 WebApp. Built with the Mobile IDE.</p>
+    </footer>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

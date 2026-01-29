@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Main view for selecting and viewing different demo layouts
 struct DemoSelectorView: View {
-    @State private var selectedDemo: DemoType = .ide
+    @State private var selectedDemo: DemoType = .fullIDE
     @State private var showDemoInfo = false
     
     var body: some View {
@@ -12,6 +12,8 @@ struct DemoSelectorView: View {
             // Selected demo
             Group {
                 switch selectedDemo {
+                case .fullIDE:
+                    IDEAppView()
                 case .ide:
                     IDEDemoView()
                 case .dashboard:
@@ -121,13 +123,15 @@ struct FeatureRow: View {
 // MARK: - Demo Types
 
 enum DemoType: String, CaseIterable {
-    case ide = "IDE"
+    case fullIDE = "Web IDE"
+    case ide = "Demo IDE"
     case dashboard = "Dashboard"
     case creative = "Creative"
     case simple = "Simple"
     
     var icon: String {
         switch self {
+        case .fullIDE: return "globe"
         case .ide: return "hammer"
         case .dashboard: return "chart.bar"
         case .creative: return "paintbrush"
@@ -137,7 +141,8 @@ enum DemoType: String, CaseIterable {
     
     var description: String {
         switch self {
-        case .ide: return "Full IDE layout with file explorer, editor, console"
+        case .fullIDE: return "Full-featured web IDE with project management"
+        case .ide: return "Demo IDE layout with file explorer, editor, console"
         case .dashboard: return "Dashboard with charts and analytics widgets"
         case .creative: return "Creative app with tools, layers, and canvas"
         case .simple: return "Simple layout demonstrating basic features"

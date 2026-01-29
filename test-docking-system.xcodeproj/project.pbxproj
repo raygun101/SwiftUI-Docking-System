@@ -6,13 +6,55 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXCopyFilesBuildPhase section */
+		6B4017992F2A1EC7001BE046 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = DemoProject;
+			dstSubfolderSpec = 7;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		6B3456852EFF03FE005FE231 /* test-docking-system.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "test-docking-system.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6B40179F2F2A1F11001BE046 /* Exceptions for "test-docking-system" folder in "test-docking-system" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				DemoProject/app.js,
+				DemoProject/index.html,
+				DemoProject/PROJECT_README.md,
+				DemoProject/styles.css,
+			);
+			target = 6B3456842EFF03FE005FE231 /* test-docking-system */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		6B40179E2F2A1EE2001BE046 /* Exceptions for "test-docking-system" folder in "Copy Files" phase from "test-docking-system" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 6B4017992F2A1EC7001BE046 /* CopyFiles */;
+			membershipExceptions = (
+				DemoProject/app.js,
+				DemoProject/index.html,
+				DemoProject/PROJECT_README.md,
+				DemoProject/styles.css,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6B3456872EFF03FE005FE231 /* test-docking-system */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				6B40179F2F2A1F11001BE046 /* Exceptions for "test-docking-system" folder in "test-docking-system" target */,
+				6B40179E2F2A1EE2001BE046 /* Exceptions for "test-docking-system" folder in "Copy Files" phase from "test-docking-system" target */,
+			);
 			path = "test-docking-system";
 			sourceTree = "<group>";
 		};
@@ -55,6 +97,7 @@
 				6B3456812EFF03FE005FE231 /* Sources */,
 				6B3456822EFF03FE005FE231 /* Frameworks */,
 				6B3456832EFF03FE005FE231 /* Resources */,
+				6B4017992F2A1EC7001BE046 /* CopyFiles */,
 			);
 			buildRules = (
 			);
