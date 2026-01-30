@@ -30,10 +30,10 @@ struct DemoSelectorView: View {
                 Spacer()
                 
                 HStack {
-                    Spacer()
-                    
                     demoSelector
                         .padding(16)
+                    
+                    Spacer()
                 }
             }
         }

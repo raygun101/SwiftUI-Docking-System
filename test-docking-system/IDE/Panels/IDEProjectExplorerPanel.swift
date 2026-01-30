@@ -107,11 +107,15 @@ public struct IDEProjectExplorerPanel: View {
                             node: node,
                             depth: 0,
                             searchText: searchText,
+                            selectedURL: ideState.selectedFileURL,
                             onSelect: { selectedNode in
                                 handleNodeSelection(selectedNode)
                             },
                             onToggle: { toggledNode in
                                 toggledNode.isExpanded.toggle()
+                            },
+                            onPreview: { previewNode in
+                                handlePreviewSelection(previewNode)
                             }
                         )
                     }
@@ -164,6 +168,16 @@ public struct IDEProjectExplorerPanel: View {
             }
         }
     }
+
+    private func handlePreviewSelection(_ node: IDEFileNode) {
+        guard !node.isDirectory else { return }
+        Task {
+            await ideState.openFile(node.url)
+            await MainActor.run {
+                ideState.previewURL = node.url
+            }
+        }
+    }
     
     private func refreshProject() {
         Task {
@@ -178,13 +192,26 @@ struct FileNodeRow: View {
     @ObservedObject var node: IDEFileNode
     let depth: Int
     let searchText: String
+    let selectedURL: URL?
     let onSelect: (IDEFileNode) -> Void
     let onToggle: (IDEFileNode) -> Void
+    let onPreview: (IDEFileNode) -> Void
     
     @Environment(\.dockTheme) var theme
     @State private var isHovered: Bool = false
     
     var body: some View {
+        let isSelected = selectedURL == node.url
+        let rowBackground: Color = {
+            if isSelected {
+                return theme.colors.activeTabBackground.opacity(0.85)
+            }
+            if isHovered {
+                return theme.colors.hoverBackground
+            }
+            return Color.clear
+        }()
+        
         VStack(alignment: .leading, spacing: 0) {
             // Node row
             HStack(spacing: 6) {
@@ -218,7 +245,10 @@ struct FileNodeRow: View {
             .padding(.leading, CGFloat(depth * 16) + 8)
             .padding(.trailing, 8)
             .padding(.vertical, 5)
-            .background(isHovered ? theme.colors.hoverBackground : Color.clear)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(rowBackground)
+            )
             .contentShape(Rectangle())
             .onTapGesture {
                 if node.isDirectory {
@@ -230,6 +260,16 @@ struct FileNodeRow: View {
             .onHover { hovering in
                 isHovered = hovering
             }
+            .contextMenu {
+                if node.isDirectory {
+                    Button("Open", action: { onToggle(node) })
+                } else {
+                    Button("Open", action: { onSelect(node) })
+                    if node.fileType.canPreview {
+                        Button("Open Preview", action: { onPreview(node) })
+                    }
+                }
+            }
             
             // Children (if expanded)
             if node.isDirectory && node.isExpanded, let children = node.sortedChildren {
@@ -238,8 +278,10 @@ struct FileNodeRow: View {
                         node: child,
                         depth: depth + 1,
                         searchText: searchText,
+                        selectedURL: selectedURL,
                         onSelect: onSelect,
-                        onToggle: onToggle
+                        onToggle: onToggle,
+                        onPreview: onPreview
                     )
                 }
             }
