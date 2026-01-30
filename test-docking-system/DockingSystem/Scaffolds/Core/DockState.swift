@@ -39,10 +39,17 @@ public class DockState: ObservableObject {
         if let group = layout.findPanelGroup(containing: panel.id) {
             group.activatePanel(panel)
         }
+        if let handler = panel.userInfo[DockPanelUserInfoKey.onActivateHandler] as? () -> Void {
+            handler()
+        }
     }
     
     public func closePanel(_ panel: DockPanel) {
         guard let group = layout.findPanelGroup(containing: panel.id) else { return }
+        
+        if let handler = panel.userInfo[DockPanelUserInfoKey.onCloseHandler] as? () -> Void {
+            handler()
+        }
         
         withAnimation(.spring(response: 0.3)) {
             group.removePanel(panel)
@@ -53,6 +60,16 @@ public class DockState: ObservableObject {
             
             if activePanel?.id == panel.id {
                 activePanel = group.activePanel ?? layout.allPanels().first
+            }
+        }
+    }
+    
+    public func addPanel(_ panel: DockPanel, to position: DockPosition, activate: Bool = true) {
+        panel.position = position
+        withAnimation(.spring(response: 0.3)) {
+            addPanelToPosition(panel, position: position)
+            if activate {
+                activatePanel(panel)
             }
         }
     }
@@ -341,6 +358,12 @@ public class DockState: ObservableObject {
         pendingDragPanel = nil
         dropZone = .none
         dragHasMoved = false
+    }
+    
+    // MARK: - Panel Lookup
+    
+    public func panel(withID id: DockPanelID) -> DockPanel? {
+        layout.allPanels().first { $0.id == id }
     }
     
     // MARK: - State Persistence

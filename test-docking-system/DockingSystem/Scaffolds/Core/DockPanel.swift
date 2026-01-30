@@ -1,5 +1,13 @@
 import SwiftUI
 
+// MARK: - User Info Keys
+
+/// Keys used for storing lifecycle callbacks in a panel's userInfo dictionary
+public enum DockPanelUserInfoKey {
+    public static let onCloseHandler = "DockPanelUserInfoKey.onClose"
+    public static let onActivateHandler = "DockPanelUserInfoKey.onActivate"
+}
+
 // MARK: - Dock Panel Model
 
 /// Represents a single dockable panel with its content and configuration

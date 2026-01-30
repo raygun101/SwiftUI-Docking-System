@@ -29,6 +29,7 @@ public struct IDEMainView: View {
             }
         }
         .onAppear {
+            ideState.attachDockState(dockState)
             if !isInitialized {
                 initializeIDE()
             }
@@ -107,22 +108,8 @@ public struct IDEMainView: View {
         ], position: .left)
         dockState.layout.leftNode = .panel(explorerGroup)
         
-        // Update center panel with editor
-        let editorGroup = DockPanelGroup(panels: [
-            DockPanel(
-                id: "editor",
-                title: "Editor",
-                icon: "doc.text",
-                position: .center
-            ) {
-                IDEEditorPanel(project: project)
-                    .environmentObject(ideState)
-            }
-        ], position: .center)
-        dockState.layout.centerNode = .panel(editorGroup)
-        
         // Update right panel with preview
-        let previewGroup = DockPanelGroup(panels: [
+        dockState.layout.rightNode = .panel(DockPanelGroup(panels: [
             DockPanel(
                 id: "preview",
                 title: "Preview",
@@ -132,11 +119,10 @@ public struct IDEMainView: View {
                 IDEPreviewPanel(project: project)
                     .environmentObject(ideState)
             }
-        ], position: .right)
-        dockState.layout.rightNode = .panel(previewGroup)
+        ], position: .right))
         
         // Update bottom panel with console
-        let consoleGroup = DockPanelGroup(panels: [
+        dockState.layout.bottomNode = .panel(DockPanelGroup(panels: [
             DockPanel(
                 id: "console",
                 title: "Console",
@@ -146,8 +132,7 @@ public struct IDEMainView: View {
                 IDEConsolePanel()
                     .environmentObject(ideState)
             }
-        ], position: .bottom)
-        dockState.layout.bottomNode = .panel(consoleGroup)
+        ], position: .bottom))
     }
     
     // MARK: - Layout Management

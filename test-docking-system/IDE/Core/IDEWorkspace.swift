@@ -138,8 +138,13 @@ public class IDEState: ObservableObject {
     // Editor state
     @Published public var selectedFileURL: URL?
     @Published public var previewURL: URL?
+    @Published public var preferredEditorPosition: DockPosition = .center
     
+    private weak var dockState: DockState?
+    private var documentPanelMap: [UUID: DockPanelID] = [:]
+    private var openDocumentsCancellable: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
+    private var isClosingPanelsProgrammatically = false
     
     private init() {
         setupBindings()
@@ -147,8 +152,67 @@ public class IDEState: ObservableObject {
     
     private func setupBindings() {
         workspaceManager.$project
-            .map { $0 != nil }
-            .assign(to: &$isProjectLoaded)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] project in
+                guard let self else { return }
+                isProjectLoaded = project != nil
+                observeOpenDocuments(in: project)
+            }
+            .store(in: &cancellables)
+    }
+    
+    public func attachDockState(_ state: DockState) {
+        dockState = state
+    }
+    
+    // MARK: - Document Observing
+    
+    private func observeOpenDocuments(in project: IDEProject?) {
+        openDocumentsCancellable = nil
+        if let project {
+            openDocumentsCancellable = project.$openDocuments
+                .receive(on: RunLoop.main)
+                .sink { [weak self] documents in
+                    guard let self else { return }
+                    Task { @MainActor in
+                        self.syncPanels(with: documents)
+                    }
+                }
+        } else {
+            closeAllDocumentPanels()
+            documentPanelMap.removeAll()
+        }
+    }
+    
+    @MainActor
+    private func syncPanels(with documents: [IDEDocument]) {
+        guard let dockState else { return }
+        for document in documents where documentPanelMap[document.id] == nil {
+            presentPanel(for: document)
+        }
+        let currentIDs = Set(documents.map { $0.id })
+        let knownIDs = Set(documentPanelMap.keys)
+        let removed = knownIDs.subtracting(currentIDs)
+        for documentID in removed {
+            guard let panelID = documentPanelMap[documentID] else { continue }
+            if let panel = dockState.panel(withID: panelID) {
+                isClosingPanelsProgrammatically = true
+                dockState.closePanel(panel)
+                isClosingPanelsProgrammatically = false
+            }
+            documentPanelMap.removeValue(forKey: documentID)
+        }
+    }
+    
+    private func closeAllDocumentPanels() {
+        guard let dockState else { return }
+        isClosingPanelsProgrammatically = true
+        for panelID in documentPanelMap.values {
+            if let panel = dockState.panel(withID: panelID) {
+                dockState.closePanel(panel)
+            }
+        }
+        isClosingPanelsProgrammatically = false
     }
     
     // MARK: - Actions
@@ -183,6 +247,7 @@ public class IDEState: ObservableObject {
                 if document.fileType.canPreview && document.fileType.id == "html" {
                     previewURL = url
                 }
+                presentPanel(for: document)
             }
         }
     }
@@ -190,13 +255,13 @@ public class IDEState: ObservableObject {
     public func saveCurrentDocument() async {
         guard let project = workspaceManager.project,
               let document = project.activeDocument else { return }
-        
-        await MainActor.run {
-            statusMessage = "Saving..."
-        }
-        
-        let success = await project.saveDocument(document)
-        
+        await saveDocument(document)
+    }
+    
+    public func saveDocument(_ document: IDEDocument) async {
+        guard workspaceManager.project != nil else { return }
+        await MainActor.run { statusMessage = "Saving..." }
+        let success = await document.save()
         await MainActor.run {
             statusMessage = success ? "Saved \(document.name)" : "Failed to save"
         }
@@ -228,5 +293,58 @@ public class IDEState: ObservableObject {
         await MainActor.run {
             statusMessage = "Project refreshed"
         }
+    }
+    
+    // MARK: - Document Panels
+    
+    @MainActor
+    private func presentPanel(for document: IDEDocument) {
+        guard let dockState, let project = workspaceManager.project else { return }
+        if let panelID = documentPanelMap[document.id],
+           let existingPanel = dockState.panel(withID: panelID) {
+            dockState.activatePanel(existingPanel)
+            return
+        }
+        let panel = createPanel(for: document, in: project)
+        documentPanelMap[document.id] = panel.id
+        dockState.addPanel(panel, to: preferredEditorPosition)
+    }
+    
+    @MainActor
+    private func createPanel(for document: IDEDocument, in project: IDEProject) -> DockPanel {
+        let panelID = "document-\(document.id.uuidString)"
+        return DockPanel(
+            id: panelID,
+            title: document.name,
+            icon: document.icon,
+            position: preferredEditorPosition,
+            visibility: [.showHeader, .showCloseButton, .allowDrag, .allowResize, .allowFloat, .allowTabbing],
+            userInfo: lifecycleHandlers(for: document, panelID: panelID, project: project)
+        ) {
+            IDEEditorPanel(document: document)
+                .environmentObject(self)
+        }
+    }
+    
+    private func lifecycleHandlers(for document: IDEDocument, panelID: DockPanelID, project: IDEProject) -> [String: Any] {
+        let onClose: () -> Void = { [weak self, weak project] in
+            guard let self else { return }
+            self.documentPanelMap.removeValue(forKey: document.id)
+            if !self.isClosingPanelsProgrammatically {
+                project?.closeDocument(document)
+            }
+            if self.selectedFileURL == document.fileURL {
+                self.selectedFileURL = project?.activeDocument?.fileURL
+            }
+        }
+        let onActivate: () -> Void = { [weak self, weak project] in
+            guard let self else { return }
+            project?.activeDocument = document
+            self.selectedFileURL = document.fileURL
+        }
+        return [
+            DockPanelUserInfoKey.onCloseHandler: onClose,
+            DockPanelUserInfoKey.onActivateHandler: onActivate
+        ]
     }
 }

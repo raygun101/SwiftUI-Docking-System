@@ -37,6 +37,7 @@ public struct IDEAppView: View {
             }
         }
         .onAppear {
+            ideState.attachDockState(dockState)
             if !isInitialized {
                 initializeIDE()
             }
@@ -271,9 +272,6 @@ public struct IDEAppView: View {
         
         return Menu {
             Section("Editors") {
-                Button(action: { addFloatingPanel(type: .codeEditor) }) {
-                    Label("Code Editor", systemImage: "chevron.left.forwardslash.chevron.right")
-                }
                 Button(action: { addFloatingPanel(type: .htmlPreview) }) {
                     Label("HTML Preview", systemImage: "globe")
                 }
@@ -330,50 +328,27 @@ public struct IDEAppView: View {
         ], position: .left)
         dockState.layout.leftNode = .panel(explorerGroup)
         
-        // Center: Editor
-        let editorGroup = DockPanelGroup(panels: [
-            DockPanel(
-                id: "editor-main",
-                title: "Editor",
-                icon: "doc.text",
-                position: .center,
-                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing]
-            ) {
-                IDEEditorPanel(project: project)
-                    .environmentObject(ideState)
-            }
-        ], position: .center)
-        dockState.layout.centerNode = .panel(editorGroup)
-        
         // Right: Preview
-        let previewGroup = DockPanelGroup(panels: [
+        dockState.layout.rightNode = .panel(DockPanelGroup(panels: [
             DockPanel(
                 id: "preview-main",
                 title: "Preview",
                 icon: "eye",
                 position: .right,
                 visibility: .standard
-            ) {
-                IDEPreviewPanel(project: project)
-                    .environmentObject(ideState)
-            }
-        ], position: .right)
-        dockState.layout.rightNode = .panel(previewGroup)
+            ) { IDEPreviewPanel(project: project).environmentObject(ideState) }
+        ], position: .right))
         
         // Bottom: Console
-        let consoleGroup = DockPanelGroup(panels: [
+        dockState.layout.bottomNode = .panel(DockPanelGroup(panels: [
             DockPanel(
                 id: "console-main",
                 title: "Console",
                 icon: "terminal.fill",
                 position: .bottom,
                 visibility: .standard
-            ) {
-                IDEConsolePanel()
-                    .environmentObject(ideState)
-            }
-        ], position: .bottom)
-        dockState.layout.bottomNode = .panel(consoleGroup)
+            ) { IDEConsolePanel().environmentObject(ideState) }
+        ], position: .bottom))
         
         // Auto-open index.html if exists
         Task {
@@ -444,18 +419,6 @@ public struct IDEAppView: View {
         let panel: DockPanel
         
         switch type {
-        case .codeEditor:
-            panel = DockPanel(
-                id: "editor-\(UUID().uuidString.prefix(4))",
-                title: "Code Editor",
-                icon: "chevron.left.forwardslash.chevron.right",
-                position: .center,
-                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
-            ) {
-                IDEEditorPanel(project: project)
-                    .environmentObject(ideState)
-            }
-            
         case .htmlPreview:
             panel = DockPanel(
                 id: "preview-\(UUID().uuidString.prefix(4))",
@@ -529,7 +492,6 @@ public struct IDEAppView: View {
 // MARK: - IDE Panel Type
 
 enum IDEPanelType {
-    case codeEditor
     case htmlPreview
     case fileExplorer
     case console
