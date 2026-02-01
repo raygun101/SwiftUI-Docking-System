@@ -192,6 +192,7 @@ public class IDEDocument: ObservableObject, Identifiable {
     @Published public var isDirty: Bool = false
     @Published public var isLoading: Bool = false
     @Published public var lastModified: Date?
+    @Published public var agentChange: AgentChangeSnapshot?
     
     private var originalContent: String
     
@@ -234,16 +235,18 @@ public class IDEDocument: ObservableObject, Identifiable {
         }
     }
     
-    public func reloadFromDisk() async {
+    public func reloadFromDisk(force: Bool = false) async {
         await MainActor.run { isLoading = true }
         
         do {
             let newContent = try String(contentsOf: fileURL, encoding: .utf8)
             await MainActor.run {
-                if !isDirty {
+                if force || !isDirty {
                     content = newContent
                     originalContent = newContent
+                    isDirty = false
                 }
+                lastModified = Date()
                 isLoading = false
             }
         } catch {
@@ -260,4 +263,22 @@ public class IDEDocument: ObservableObject, Identifiable {
         content = originalContent
         isDirty = false
     }
+    
+    public func recordAgentChange(oldContent: String, newContent: String) {
+        agentChange = AgentChangeSnapshot(
+            oldContent: oldContent,
+            newContent: newContent,
+            timestamp: Date()
+        )
+    }
+    
+    public func clearAgentChange() {
+        agentChange = nil
+    }
+}
+
+public struct AgentChangeSnapshot {
+    public let oldContent: String
+    public let newContent: String
+    public let timestamp: Date
 }

@@ -11,6 +11,8 @@ public struct IDEAppView: View {
     @State private var isInitialized = false
     @State private var showingNewFileSheet = false
     @State private var showingNewFolderSheet = false
+    @State private var showingMCPSettings = false
+    @State private var showingAgentPanel = false
     
     public init() {
         _dockState = StateObject(wrappedValue: DockState(layout: IDEAppView.createInitialLayout()))
@@ -35,6 +37,12 @@ public struct IDEAppView: View {
             if ideState.isLoading {
                 loadingOverlay
             }
+        }
+        .sheet(isPresented: $showingMCPSettings) {
+            MCPSettingsView()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .presentMCPSettings)) { _ in
+            showingMCPSettings = true
         }
         .onAppear {
             ideState.attachDockState(dockState)
@@ -89,6 +97,16 @@ public struct IDEAppView: View {
             
             // Panel toggles
             panelToggles
+            
+            Divider()
+                .frame(height: 20)
+                .overlay(theme.colors.separator)
+            
+            // AI Agent button
+            agentButton
+            
+            // Settings button
+            settingsButton
             
             Divider()
                 .frame(height: 20)
@@ -267,6 +285,37 @@ public struct IDEAppView: View {
         }
     }
     
+    private var agentButton: some View {
+        let theme = themeManager.currentTheme
+        
+        return Button(action: { toggleAgentPanel() }) {
+            HStack(spacing: 4) {
+                Image(systemName: "sparkles")
+                    .foregroundColor(.orange)
+                Text("Agent")
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(theme.colors.tertiaryBackground)
+            .cornerRadius(6)
+            .foregroundColor(theme.colors.text)
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private var settingsButton: some View {
+        let theme = themeManager.currentTheme
+        
+        return Button(action: { showingMCPSettings = true }) {
+            Image(systemName: "gearshape")
+                .padding(6)
+                .background(theme.colors.tertiaryBackground)
+                .cornerRadius(6)
+                .foregroundColor(theme.colors.text)
+        }
+        .buttonStyle(.plain)
+    }
+    
     private var addPanelMenu: some View {
         let theme = themeManager.currentTheme
         
@@ -288,6 +337,15 @@ public struct IDEAppView: View {
                     Label("Search", systemImage: "magnifyingglass")
                 }
             }
+            Divider()
+            Section("AI Agent") {
+                Button(action: { addFloatingPanel(type: .agentChat) }) {
+                    Label("AI Assistant", systemImage: "sparkles")
+                }
+                Button(action: { addFloatingPanel(type: .tools) }) {
+                    Label("Tools", systemImage: "wrench.and.screwdriver")
+                }
+            }
         } label: {
             Image(systemName: "plus.rectangle")
                 .padding(6)
@@ -302,12 +360,29 @@ public struct IDEAppView: View {
     
     private func initializeIDE() {
         isInitialized = true
+        
+        // Initialize MCP system
+        MCP.initialize()
+        
+        // Connect Agent-IDE bridge
+        AgentIDEBridge.shared.connect(to: ideState)
+        
         Task {
             await ideState.initialize()
             await MainActor.run {
                 setupProjectPanels()
+                updateMCPContext()
             }
         }
+    }
+    
+    private func updateMCPContext() {
+        guard let project = ideState.workspaceManager.project else { return }
+        MCP.setProjectContext(
+            rootURL: project.rootURL,
+            openFiles: project.openDocuments.map { $0.fileURL },
+            activeFile: project.activeDocument?.fileURL
+        )
     }
     
     private func setupProjectPanels() {
@@ -328,7 +403,7 @@ public struct IDEAppView: View {
         ], position: .left)
         dockState.layout.leftNode = .panel(explorerGroup)
         
-        // Right: Preview
+        // Right: Preview + Agent
         dockState.layout.rightNode = .panel(DockPanelGroup(panels: [
             DockPanel(
                 id: "preview-main",
@@ -336,7 +411,14 @@ public struct IDEAppView: View {
                 icon: "eye",
                 position: .right,
                 visibility: .standard
-            ) { IDEPreviewPanel(project: project).environmentObject(ideState) }
+            ) { IDEPreviewPanel(project: project).environmentObject(ideState) },
+            DockPanel(
+                id: "agent-main",
+                title: "AI Assistant",
+                icon: "sparkles",
+                position: .right,
+                visibility: .standard
+            ) { AgentChatView().environmentObject(ideState) }
         ], position: .right))
         
         // Bottom: Console
@@ -413,6 +495,23 @@ public struct IDEAppView: View {
         }
     }
     
+    private func toggleAgentPanel() {
+        // Find and activate the agent panel in the right panel group
+        if case .panel(let rightGroup) = dockState.layout.rightNode {
+            if let agentIndex = rightGroup.panels.firstIndex(where: { $0.id == "agent-main" }) {
+                rightGroup.activeTabIndex = agentIndex
+            }
+        }
+        
+        // Make sure right panel is visible
+        if dockState.layout.isRightCollapsed {
+            withAnimation(.spring(response: 0.3)) {
+                dockState.layout.isRightCollapsed = false
+                dockState.layout.rightWidth = 350
+            }
+        }
+    }
+    
     private func addFloatingPanel(type: IDEPanelType) {
         guard let project = ideState.workspaceManager.project else { return }
         
@@ -465,6 +564,31 @@ public struct IDEAppView: View {
             ) {
                 SearchView()
             }
+            
+        case .agentChat:
+            panel = DockPanel(
+                id: "agent-\(UUID().uuidString.prefix(4))",
+                title: "AI Assistant",
+                icon: "sparkles",
+                position: .right,
+                size: CGSize(width: 400, height: 500),
+                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
+            ) {
+                AgentChatView()
+                    .environmentObject(ideState)
+            }
+            
+        case .tools:
+            panel = DockPanel(
+                id: "tools-\(UUID().uuidString.prefix(4))",
+                title: "Tools",
+                icon: "wrench.and.screwdriver",
+                position: .right,
+                size: CGSize(width: 350, height: 400),
+                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
+            ) {
+                ToolsPanelView()
+            }
         }
         
         withAnimation(.spring(response: 0.3)) {
@@ -496,4 +620,6 @@ enum IDEPanelType {
     case fileExplorer
     case console
     case search
+    case agentChat
+    case tools
 }

@@ -13,11 +13,16 @@ public class IDEFileWatcher {
     
     public var onChange: ((ChangeType, URL) -> Void)?
     
+    private struct TrackedItem {
+        let modifiedDate: Date
+        let isDirectory: Bool
+    }
+    
     private let rootURL: URL
     private var source: DispatchSourceFileSystemObject?
     private var directoryHandle: CInt = -1
     private var isRunning = false
-    private var knownFiles: Set<String> = []
+    private var knownFiles: [String: TrackedItem] = [:]
     private var timer: Timer?
     
     public init(rootURL: URL) {
@@ -59,8 +64,8 @@ public class IDEFileWatcher {
     
     // MARK: - Scanning
     
-    private func scanDirectory() -> Set<String> {
-        var files = Set<String>()
+    private func scanDirectory() -> [String: TrackedItem] {
+        var files: [String: TrackedItem] = [:]
         
         guard let enumerator = FileManager.default.enumerator(
             at: rootURL,
@@ -71,8 +76,12 @@ public class IDEFileWatcher {
         }
         
         while let url = enumerator.nextObject() as? URL {
-            let relativePath = url.path.replacingOccurrences(of: rootURL.path, with: "")
-            files.insert(relativePath)
+            let resourceValues = try? url.resourceValues(forKeys: [.isDirectoryKey, .contentModificationDateKey])
+            let isDirectory = resourceValues?.isDirectory ?? false
+            let modifiedDate = resourceValues?.contentModificationDate ?? Date()
+            let relativePath = relativePath(for: url)
+            if relativePath.isEmpty { continue }
+            files[relativePath] = TrackedItem(modifiedDate: modifiedDate, isDirectory: isDirectory)
         }
         
         return files
@@ -80,24 +89,46 @@ public class IDEFileWatcher {
     
     private func checkForChanges() {
         let currentFiles = scanDirectory()
+        let previousPaths = Set(knownFiles.keys)
+        let currentPaths = Set(currentFiles.keys)
         
-        // Check for new files
-        let addedFiles = currentFiles.subtracting(knownFiles)
+        let addedFiles = currentPaths.subtracting(previousPaths)
         for path in addedFiles {
-            let url = rootURL.appendingPathComponent(path)
-            onChange?(.created, url)
+            emitChange(.created, relativePath: path)
         }
         
-        // Check for deleted files
-        let deletedFiles = knownFiles.subtracting(currentFiles)
+        let deletedFiles = previousPaths.subtracting(currentPaths)
         for path in deletedFiles {
-            let url = rootURL.appendingPathComponent(path)
-            onChange?(.deleted, url)
+            emitChange(.deleted, relativePath: path)
         }
         
-        // For existing files, we could check modification dates
-        // but for simplicity, we'll just detect add/delete for now
+        let potentiallyModified = currentPaths.intersection(previousPaths)
+        for path in potentiallyModified {
+            guard let newInfo = currentFiles[path], let oldInfo = knownFiles[path] else { continue }
+            guard !newInfo.isDirectory else { continue }
+            if newInfo.modifiedDate > oldInfo.modifiedDate {
+                emitChange(.modified, relativePath: path)
+            }
+        }
         
         knownFiles = currentFiles
+    }
+    
+    private func emitChange(_ type: ChangeType, relativePath: String) {
+        let trimmedPath = relativePath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !trimmedPath.isEmpty else { return }
+        let url = rootURL.appendingPathComponent(trimmedPath)
+        onChange?(type, url)
+    }
+    
+    private func relativePath(for url: URL) -> String {
+        let rootPath = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
+        var fullPath = url.path
+        if fullPath.hasPrefix(rootPath) {
+            fullPath.removeFirst(rootPath.count)
+        } else if fullPath.hasPrefix(rootURL.path) {
+            fullPath.removeFirst(rootURL.path.count)
+        }
+        return fullPath
     }
 }

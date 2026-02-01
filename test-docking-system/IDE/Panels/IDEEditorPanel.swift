@@ -7,6 +7,7 @@ public struct IDEEditorPanel: View {
     @ObservedObject var document: IDEDocument
     @EnvironmentObject var ideState: IDEState
     @Environment(\.dockTheme) var theme
+    @State private var isDiffCollapsed: Bool = false
     
     public init(document: IDEDocument) {
         self.document = document
@@ -16,6 +17,16 @@ public struct IDEEditorPanel: View {
         VStack(spacing: 0) {
             documentToolbar
             Divider()
+            if let snapshot = document.agentChange {
+                AgentDiffView(
+                    snapshot: snapshot,
+                    isCollapsed: $isDiffCollapsed,
+                    onDismiss: {
+                        document.clearAgentChange()
+                    }
+                )
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
             IDEEditorRegistry.shared.editorView(for: document)
         }
         .background(theme.colors.panelBackground)

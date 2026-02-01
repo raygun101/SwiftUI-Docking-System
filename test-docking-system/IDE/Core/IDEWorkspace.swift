@@ -155,8 +155,8 @@ public class IDEState: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] project in
                 guard let self else { return }
-                isProjectLoaded = project != nil
-                observeOpenDocuments(in: project)
+                self.isProjectLoaded = project != nil
+                self.observeOpenDocuments(in: project)
             }
             .store(in: &cancellables)
     }
