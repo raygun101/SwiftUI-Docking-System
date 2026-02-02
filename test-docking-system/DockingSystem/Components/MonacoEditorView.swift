@@ -9,6 +9,7 @@ public struct MonacoEditorView: View {
     let language: String
     let theme: MonacoTheme
     let readOnly: Bool
+    let comparisonContent: String?
     let onContentChange: ((String) -> Void)?
     
     public init(
@@ -16,12 +17,14 @@ public struct MonacoEditorView: View {
         language: String = "swift",
         theme: MonacoTheme = .vs,
         readOnly: Bool = false,
+        comparisonContent: String? = nil,
         onContentChange: ((String) -> Void)? = nil
     ) {
         self._code = code
         self.language = language
         self.theme = theme
         self.readOnly = readOnly
+        self.comparisonContent = comparisonContent
         self.onContentChange = onContentChange
     }
     
@@ -31,6 +34,7 @@ public struct MonacoEditorView: View {
             language: language,
             theme: theme,
             readOnly: readOnly,
+            comparisonContent: comparisonContent,
             onContentChange: onContentChange
         )
     }
@@ -52,6 +56,7 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
     let language: String
     let theme: MonacoTheme
     let readOnly: Bool
+    let comparisonContent: String?
     let onContentChange: ((String) -> Void)?
     
     func makeUIView(context: Context) -> WKWebView {
@@ -67,24 +72,37 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
         // Load Monaco editor HTML
         let html = generateMonacoHTML()
         webView.loadHTMLString(html, baseURL: nil)
-        
+
         context.coordinator.webView = webView
+        context.coordinator.lastComparisonContent = comparisonContent
         return webView
     }
-    
+
     func updateUIView(_ webView: WKWebView, context: Context) {
+        context.coordinator.parent = self
+
+        // Rebuild editor if diff mode changed
+        if context.coordinator.lastComparisonContent != comparisonContent {
+            context.coordinator.lastComparisonContent = comparisonContent
+            context.coordinator.lastKnownCode = code
+            context.coordinator.pendingCode = code
+            context.coordinator.pendingComparison = comparisonContent
+            context.coordinator.isEditorReady = false
+            let html = generateMonacoHTML()
+            webView.loadHTMLString(html, baseURL: nil)
+            return
+        }
+
         // Update code if changed externally
         if context.coordinator.lastKnownCode != code {
             context.coordinator.lastKnownCode = code
-            let escapedCode = code.replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "`", with: "\\`")
-                .replacingOccurrences(of: "$", with: "\\$")
-            let js = "if (window.editor) { window.editor.setValue(`\(escapedCode)`); }"
-            webView.evaluateJavaScript(js, completionHandler: nil)
+            context.coordinator.pendingCode = code
         }
+        context.coordinator.pendingComparison = comparisonContent
+        context.coordinator.applyPendingContentIfReady()
         
         // Update theme
-        let themeJS = "if (window.monaco) { monaco.editor.setTheme('\(theme.rawValue)'); }"
+        let themeJS = "if (window.monaco) { monaco.editor.setTheme('" + theme.rawValue + "'); }"
         webView.evaluateJavaScript(themeJS, completionHandler: nil)
         
         // Update language
@@ -103,6 +121,11 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
             .replacingOccurrences(of: "`", with: "\\`")
             .replacingOccurrences(of: "$", with: "\\$")
             .replacingOccurrences(of: "</script>", with: "<\\/script>")
+        let escapedComparison = (comparisonContent ?? "").replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "`", with: "\\`")
+            .replacingOccurrences(of: "$", with: "\\$")
+            .replacingOccurrences(of: "</script>", with: "<\\/script>")
+        let hasComparison = comparisonContent != nil
         
         return """
         <!DOCTYPE html>
@@ -124,8 +147,7 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
                 require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
                 
                 require(['vs/editor/editor.main'], function() {
-                    window.editor = monaco.editor.create(document.getElementById('container'), {
-                        value: `\(escapedCode)`,
+                    const baseOptions = {
                         language: '\(language)',
                         theme: '\(theme.rawValue)',
                         readOnly: \(readOnly ? "true" : "false"),
@@ -143,16 +165,47 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
                         cursorBlinking: 'smooth',
                         cursorSmoothCaretAnimation: 'on',
                         padding: { top: 8, bottom: 8 }
-                    });
+                    };
+
+                    window.isDiffMode = \(hasComparison ? "true" : "false");
                     
-                    // Send content changes to Swift
-                    window.editor.onDidChangeModelContent(function() {
-                        const content = window.editor.getValue();
-                        window.webkit.messageHandlers.monacoHandler.postMessage({
-                            type: 'contentChange',
-                            content: content
+                    if (window.isDiffMode) {
+                        const diffEditor = monaco.editor.createDiffEditor(document.getElementById('container'), {
+                            ...baseOptions,
+                            renderSideBySide: true,
+                            enableSplitViewResizing: true,
+                            readOnly: false
                         });
-                    });
+                        const originalModel = monaco.editor.createModel(`\(escapedComparison)`, '\(language)');
+                        const modifiedModel = monaco.editor.createModel(`\(escapedCode)`, '\(language)');
+                        diffEditor.setModel({ original: originalModel, modified: modifiedModel });
+                        window.editor = diffEditor;
+                        window.modifiedModel = modifiedModel;
+                        window.originalModel = originalModel;
+                        
+                        window.modifiedModel.onDidChangeContent(function() {
+                            const content = window.modifiedModel.getValue();
+                            window.webkit.messageHandlers.monacoHandler.postMessage({
+                                type: 'contentChange',
+                                content: content
+                            });
+                        });
+                    } else {
+                        const editor = monaco.editor.create(document.getElementById('container'), {
+                            ...baseOptions,
+                            value: `\(escapedCode)`
+                        });
+                        window.editor = editor;
+                        
+                        // Send content changes to Swift
+                        window.editor.onDidChangeModelContent(function() {
+                            const content = window.editor.getValue();
+                            window.webkit.messageHandlers.monacoHandler.postMessage({
+                                type: 'contentChange',
+                                content: content
+                            });
+                        });
+                    }
                     
                     // Notify that editor is ready
                     window.webkit.messageHandlers.monacoHandler.postMessage({
@@ -171,11 +224,15 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
         var parent: MonacoEditorRepresentable
         var webView: WKWebView?
         var lastKnownCode: String = ""
+        var lastComparisonContent: String?
         var isEditorReady = false
+        var pendingCode: String?
+        var pendingComparison: String?
         
         init(_ parent: MonacoEditorRepresentable) {
             self.parent = parent
             self.lastKnownCode = parent.code
+            self.lastComparisonContent = parent.comparisonContent
         }
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -185,6 +242,7 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
             switch type {
             case "ready":
                 isEditorReady = true
+                applyPendingContentIfReady()
                 
             case "contentChange":
                 if let content = dict["content"] as? String {
@@ -202,6 +260,36 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
         
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             // Editor loaded
+        }
+        
+        func applyPendingContentIfReady() {
+            guard isEditorReady,
+                  let webView,
+                  let code = pendingCode else { return }
+            let comparison = pendingComparison ?? parent.comparisonContent
+            let escapedCode = code.replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "`", with: "\\`")
+                .replacingOccurrences(of: "$", with: "\\$")
+            let escapedComparison = (comparison ?? "").replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "`", with: "\\`")
+                .replacingOccurrences(of: "$", with: "\\$")
+            let js = """
+            if (window.editor && window.monaco) {
+                if (window.isDiffMode) {
+                    const models = window.editor.getModel();
+                    if (models && models.modified) {
+                        models.modified.setValue(`\(escapedCode)`);
+                    }
+                    if (models && models.original) {
+                        models.original.setValue(`\(escapedComparison)`);
+                    }
+                } else {
+                    window.editor.setValue(`\(escapedCode)`);
+                }
+            }
+            """
+            webView.evaluateJavaScript(js, completionHandler: nil)
+            pendingCode = nil
         }
     }
 }

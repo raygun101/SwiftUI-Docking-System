@@ -6,6 +6,7 @@ import SwiftUI
 public enum DockPanelUserInfoKey {
     public static let onCloseHandler = "DockPanelUserInfoKey.onClose"
     public static let onActivateHandler = "DockPanelUserInfoKey.onActivate"
+    public static let toolbarProvider = "DockPanelUserInfoKey.toolbarProvider"
 }
 
 // MARK: - Dock Panel Model

@@ -275,6 +275,30 @@ public class IDEDocument: ObservableObject, Identifiable {
     public func clearAgentChange() {
         agentChange = nil
     }
+
+    public func acceptAgentChange() {
+        guard agentChange != nil else { return }
+        agentChange = nil
+        originalContent = content
+        isDirty = false
+        lastModified = Date()
+    }
+
+    public func rejectAgentChange() async {
+        guard let snapshot = agentChange else { return }
+        do {
+            try snapshot.oldContent.write(to: fileURL, atomically: true, encoding: .utf8)
+            await MainActor.run {
+                content = snapshot.oldContent
+                originalContent = snapshot.oldContent
+                isDirty = false
+                agentChange = nil
+                lastModified = Date()
+            }
+        } catch {
+            print("Failed to reject agent change: \(error.localizedDescription)")
+        }
+    }
 }
 
 public struct AgentChangeSnapshot {

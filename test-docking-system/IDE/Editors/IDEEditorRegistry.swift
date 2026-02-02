@@ -66,7 +66,8 @@ struct CodeEditorWrapper: View {
             ),
             language: document.fileType.language ?? "plaintext",
             theme: .vsDark,
-            readOnly: false
+            readOnly: false,
+            comparisonContent: document.agentChange?.oldContent
         ) { newContent in
             document.updateContent(newContent)
         }
@@ -96,7 +97,8 @@ struct MarkdownEditorWrapper: View {
             ),
             language: "markdown",
             theme: .vsDark,
-            readOnly: false
+            readOnly: false,
+            comparisonContent: document.agentChange?.oldContent
         ) { newContent in
             document.updateContent(newContent)
         }

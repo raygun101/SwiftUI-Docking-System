@@ -19,11 +19,8 @@ public struct IDEProjectExplorerPanel: View {
     
     public var body: some View {
         VStack(spacing: 0) {
-            // Toolbar
-            explorerToolbar
-            
-            Divider()
-            
+            DockPanelToolbar { explorerToolbar }
+
             // Search bar
             searchBar
             
@@ -72,9 +69,6 @@ public struct IDEProjectExplorerPanel: View {
             .buttonStyle(.plain)
             .foregroundColor(theme.colors.secondaryText)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(theme.colors.headerBackground)
     }
     
     // MARK: - Search

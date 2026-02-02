@@ -15,12 +15,7 @@ public struct IDEConsolePanel: View {
     
     public var body: some View {
         VStack(spacing: 0) {
-            // Console toolbar
-            consoleToolbar
-            
-            Divider()
-            
-            // Console output
+            DockPanelToolbar { consoleToolbar }
             consoleOutput
         }
         .background(theme.colors.panelBackground)

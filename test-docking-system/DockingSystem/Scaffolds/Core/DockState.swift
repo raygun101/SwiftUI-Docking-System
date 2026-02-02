@@ -14,6 +14,9 @@ public class DockState: ObservableObject {
     @Published public var isResizing: Bool = false
     @Published public var resizingPosition: DockPosition?
     
+    /// Optional callback invoked when the dock UI asks for a new panel to be created
+    public var onRequestNewPanel: ((DockPosition) -> Void)?
+
     private var cancellables = Set<AnyCancellable>()
     
     public init(layout: DockLayout = DockLayout()) {

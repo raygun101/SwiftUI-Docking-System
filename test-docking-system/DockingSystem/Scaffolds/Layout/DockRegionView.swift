@@ -93,12 +93,8 @@ struct DockPanelGroupView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Tab bar if multiple panels
-            if group.panels.count > 1 {
-                tabBar
-            }
+            tabBar
             
-            // Active panel content
             if let activePanel = group.activePanel {
                 panelContent(for: activePanel)
             }
@@ -115,7 +111,7 @@ struct DockPanelGroupView: View {
     private var tabBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
-                ForEach(Array(group.panels.enumerated()), id: \.element.id) { index, panel in
+                ForEach(Array(group.panels.enumerated()), id: \ .element.id) { index, panel in
                     TabView(
                         panel: panel,
                         isActive: index == group.activeTabIndex,
@@ -131,10 +127,12 @@ struct DockPanelGroupView: View {
                     )
                 }
                 
-                Spacer()
+                Spacer(minLength: 0)
+                tabActions
             }
+            .padding(.trailing, 4)
         }
-        .frame(height: 32)
+        .frame(height: 36)
         .background(theme.colors.tabBackground)
         .overlay(
             Rectangle()
@@ -143,24 +141,52 @@ struct DockPanelGroupView: View {
             alignment: .bottom
         )
     }
+
+    private var tabActions: some View {
+        HStack(spacing: 6) {
+            Button(action: { state.layout.toggleCollapse(for: position) }) {
+                Image(systemName: collapseIcon)
+                    .font(.system(size: theme.typography.iconSize - 2))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(theme.colors.secondaryText)
+            .help("Collapse area")
+            
+            Button(action: { state.onRequestNewPanel?(position) }) {
+                Image(systemName: "plus")
+                    .font(.system(size: theme.typography.iconSize - 2))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(theme.colors.secondaryText)
+            .disabled(state.onRequestNewPanel == nil)
+            .help("Add panel")
+            
+            if let activePanel = group.activePanel, activePanel.visibility.contains(.allowFloat) {
+                Button(action: { state.floatPanel(activePanel) }) {
+                    Image(systemName: "arrow.up.right.square")
+                        .font(.system(size: theme.typography.iconSize - 2))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(theme.colors.secondaryText)
+                .help("Pop out panel")
+            }
+        }
+        .padding(.leading, 8)
+    }
+
+    private var collapseIcon: String {
+        switch position {
+        case .left: return state.layout.isLeftCollapsed ? "chevron.right" : "chevron.left"
+        case .right: return state.layout.isRightCollapsed ? "chevron.left" : "chevron.right"
+        case .top: return state.layout.isTopCollapsed ? "chevron.down" : "chevron.up"
+        case .bottom: return state.layout.isBottomCollapsed ? "chevron.up" : "chevron.down"
+        default: return "chevron.up"
+        }
+    }
     
     @ViewBuilder
     private func panelContent(for panel: DockPanel) -> some View {
-        VStack(spacing: 0) {
-            // Header (if single panel or always show header)
-            if group.panels.count == 1 || panel.visibility.contains(.showHeader) {
-                DockPanelHeader(panel: panel, position: position)
-            }
-            
-            // Content
-            panel.content()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            state.activatePanel(panel)
-        }
+        PanelContainerView(panel: panel, position: position)
     }
 }
 
@@ -258,6 +284,7 @@ struct TabView: View {
 struct DockPanelHeader: View {
     @ObservedObject var panel: DockPanel
     let position: DockPosition
+    let toolbar: AnyView?
     
     @EnvironmentObject var state: DockState
     @Environment(\.dockTheme) var theme
@@ -265,32 +292,16 @@ struct DockPanelHeader: View {
     
     var body: some View {
         HStack(spacing: theme.spacing.headerPadding / 2) {
-            // Icon
-            if let icon = panel.icon {
-                Image(systemName: icon)
-                    .font(.system(size: theme.typography.iconSize))
-                    .foregroundColor(panel.isActive ? theme.colors.accent : theme.colors.secondaryText)
+            if let toolbar = resolvedToolbar {
+                toolbar
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Spacer()
             }
             
-            // Title
-            Text(panel.title)
-                .font(theme.typography.headerFont)
-                .fontWeight(theme.typography.headerFontWeight)
-                .foregroundColor(panel.isActive ? theme.colors.text : theme.colors.secondaryText)
-                .lineLimit(1)
-            
-            Spacer()
-            
-            // Action buttons
             HStack(spacing: 2) {
-                if panel.visibility.contains(.showCollapseButton) {
-                    HeaderActionButton(icon: "chevron.up") {
-                        state.layout.toggleCollapse(for: position)
-                    }
-                }
-                
                 if panel.visibility.contains(.allowFloat) {
-                    HeaderActionButton(icon: "uiwindow.split.2x1") {
+                    HeaderActionButton(icon: "arrow.up.right.square") {
                         state.floatPanel(panel)
                     }
                 }
@@ -327,6 +338,86 @@ struct DockPanelHeader: View {
             }
         })
         .opacity(state.draggedPanel?.id == panel.id ? 0.4 : 1.0)
+    }
+
+    private var resolvedToolbar: AnyView? {
+        if let toolbar {
+            return toolbar
+        }
+        if let toolbarBuilder = panel.userInfo[DockPanelUserInfoKey.toolbarProvider] as? () -> AnyView {
+            return toolbarBuilder()
+        }
+        return nil
+    }
+}
+
+// MARK: - Panel Container
+
+private struct PanelContainerView: View {
+    @ObservedObject var panel: DockPanel
+    let position: DockPosition
+    
+    @EnvironmentObject var state: DockState
+    @Environment(\.dockTheme) var theme
+    @State private var toolbar: AnyView?
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            DockPanelHeader(panel: panel, position: position, toolbar: toolbar)
+            
+            panel.content()
+                .modifier(PanelToolbarCapture(toolbar: $toolbar))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            state.activatePanel(panel)
+        }
+    }
+}
+
+// MARK: - Toolbar Capture Infrastructure
+
+private struct PanelToolbarPreferenceKey: PreferenceKey {
+    static var defaultValue: PanelToolbarContainer? = nil
+    static func reduce(value: inout PanelToolbarContainer?, nextValue: () -> PanelToolbarContainer?) {
+        value = nextValue() ?? value
+    }
+}
+
+private struct PanelToolbarContainer: Equatable {
+    let id = UUID()
+    let view: AnyView
+    static func == (lhs: PanelToolbarContainer, rhs: PanelToolbarContainer) -> Bool { lhs.id == rhs.id }
+}
+
+private struct PanelToolbarCapture: ViewModifier {
+    @Binding var toolbar: AnyView?
+    
+    func body(content: Content) -> some View {
+        content
+            .onPreferenceChange(PanelToolbarPreferenceKey.self) { newValue in
+                toolbar = newValue?.view
+            }
+    }
+}
+
+/// Declare a toolbar for the enclosing dock panel. The content is rendered in the panel header instead of inside the panel body.
+public struct DockPanelToolbar<Content: View>: View {
+    private let content: () -> Content
+    
+    public init(@ViewBuilder content: @escaping () -> Content) {
+        self.content = content
+    }
+    
+    public var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .preference(
+                key: PanelToolbarPreferenceKey.self,
+                value: PanelToolbarContainer(view: AnyView(content()))
+            )
     }
 }
 
