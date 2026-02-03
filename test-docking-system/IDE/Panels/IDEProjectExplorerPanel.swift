@@ -39,36 +39,21 @@ public struct IDEProjectExplorerPanel: View {
     // MARK: - Toolbar
     
     private var explorerToolbar: some View {
-        HStack(spacing: 8) {
-            Text(project.name)
-                .font(theme.typography.headerFont)
-                .fontWeight(theme.typography.headerFontWeight)
-                .foregroundColor(theme.colors.text)
-                .lineLimit(1)
-            
-            Spacer()
-            
-            Button(action: { showNewFileSheet = true }) {
-                Image(systemName: "doc.badge.plus")
-                    .font(.system(size: 14))
+        DockToolbarScaffold(leading: {
+            DockToolbarChip(icon: "folder", title: project.name)
+        }, trailing: {
+            DockToolbarIconButton("doc.badge.plus", accessibilityLabel: "Create file", role: .accent) {
+                showNewFileSheet = true
             }
-            .buttonStyle(.plain)
-            .foregroundColor(theme.colors.secondaryText)
             
-            Button(action: { showNewFolderSheet = true }) {
-                Image(systemName: "folder.badge.plus")
-                    .font(.system(size: 14))
+            DockToolbarIconButton("folder.badge.plus", accessibilityLabel: "Create folder", role: .accent) {
+                showNewFolderSheet = true
             }
-            .buttonStyle(.plain)
-            .foregroundColor(theme.colors.secondaryText)
             
-            Button(action: refreshProject) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 14))
+            DockToolbarIconButton("arrow.clockwise", accessibilityLabel: "Refresh project") {
+                refreshProject()
             }
-            .buttonStyle(.plain)
-            .foregroundColor(theme.colors.secondaryText)
-        }
+        })
     }
     
     // MARK: - Search

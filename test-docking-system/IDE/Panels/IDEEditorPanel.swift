@@ -120,53 +120,39 @@ private struct AgentChangeActionBar: View {
     }
     
     private var documentToolbar: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 6) {
-                Image(systemName: document.icon)
-                    .font(.system(size: 12))
-                    .foregroundColor(document.fileType.iconColor)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(document.name)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(theme.colors.text)
-                    
-                    Text(document.fileURL.path)
-                        .font(.system(size: 9))
-                        .foregroundColor(theme.colors.tertiaryText)
-                        .lineLimit(1)
-                }
-                
-                if document.isDirty {
-                    Circle()
-                        .fill(theme.colors.accent)
-                        .frame(width: 6, height: 6)
-                }
-            }
-            
-            Spacer()
-            
+        DockToolbarScaffold(leading: {
+            DockToolbarChip(icon: document.icon, title: relativeFilePathDisplay)
+        }, trailing: {
             if let language = document.fileType.language {
-                Text(language.uppercased())
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(theme.colors.tertiaryText)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(theme.colors.tertiaryBackground)
-                    .cornerRadius(4)
+                DockToolbarChip(title: language.uppercased())
             }
             
-            Button(action: saveDocument) {
-                Image(systemName: "square.and.arrow.down")
-                    .font(.system(size: 13))
+            DockToolbarIconButton(
+                "square.and.arrow.down",
+                accessibilityLabel: "Save document",
+                role: document.isDirty ? .accent : .normal,
+                isActive: document.isDirty
+            ) {
+                saveDocument()
             }
-            .buttonStyle(.plain)
-            .foregroundColor(document.isDirty ? theme.colors.accent : theme.colors.tertiaryText)
             .disabled(!document.isDirty)
+        })
+    }
+    
+    private var relativeFilePathDisplay: String {
+        guard let projectRoot = ideState.workspaceManager.project?.rootURL else {
+            return document.fileURL.lastPathComponent
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(theme.colors.secondaryBackground)
+        let documentPath = document.fileURL.path
+        let rootPath = projectRoot.path
+        if documentPath.hasPrefix(rootPath) {
+            var relative = String(documentPath.dropFirst(rootPath.count))
+            if relative.hasPrefix("/") {
+                relative.removeFirst()
+            }
+            return relative.isEmpty ? document.fileURL.lastPathComponent : relative
+        }
+        return document.fileURL.lastPathComponent
     }
     
     private func saveDocument() {

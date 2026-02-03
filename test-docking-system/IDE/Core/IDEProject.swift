@@ -265,8 +265,9 @@ public class IDEDocument: ObservableObject, Identifiable {
     }
     
     public func recordAgentChange(oldContent: String, newContent: String) {
+        let preservedOrigin = agentChange?.oldContent ?? oldContent
         agentChange = AgentChangeSnapshot(
-            oldContent: oldContent,
+            oldContent: preservedOrigin,
             newContent: newContent,
             timestamp: Date()
         )

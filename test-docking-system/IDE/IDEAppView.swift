@@ -13,6 +13,7 @@ public struct IDEAppView: View {
     @State private var showingNewFolderSheet = false
     @State private var showingMCPSettings = false
     @State private var showingAgentPanel = false
+    @State private var didConfigureDockCallbacks = false
     
     public init() {
         _dockState = StateObject(wrappedValue: DockState(layout: IDEAppView.createInitialLayout()))
@@ -46,6 +47,7 @@ public struct IDEAppView: View {
         }
         .onAppear {
             ideState.attachDockState(dockState)
+            configureDockCallbacksIfNeeded()
             if !isInitialized {
                 initializeIDE()
             }
@@ -371,6 +373,7 @@ public struct IDEAppView: View {
             await ideState.initialize()
             await MainActor.run {
                 setupProjectPanels()
+                configureDockCallbacksIfNeeded()
                 updateMCPContext()
             }
         }
@@ -492,6 +495,73 @@ public struct IDEAppView: View {
             dockState.layout.isLeftCollapsed = false
             dockState.layout.isRightCollapsed = false
             dockState.layout.isBottomCollapsed = false
+        }
+    }
+    
+    // MARK: - Dock Callbacks
+
+    private func configureDockCallbacksIfNeeded() {
+        guard !didConfigureDockCallbacks else { return }
+        didConfigureDockCallbacks = true
+        dockState.onRequestNewPanel = { [weak ideState = ideState, dockState] position in
+            guard
+                let ideState,
+                let project = ideState.workspaceManager.project,
+                let panel = IDEAppView.makePanel(for: position, project: project, ideState: ideState)
+            else { return }
+            dockState.addPanel(panel, to: position)
+        }
+    }
+    
+    private static func makePanel(for position: DockPosition, project: IDEProject, ideState: IDEState) -> DockPanel? {
+        switch position {
+        case .left:
+            return DockPanel(
+                id: "explorer-\(UUID().uuidString.prefix(4))",
+                title: project.name,
+                icon: "folder.fill",
+                position: .left,
+                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
+            ) {
+                IDEProjectExplorerPanel(project: project)
+                    .environmentObject(ideState)
+            }
+        case .right:
+            return DockPanel(
+                id: "preview-\(UUID().uuidString.prefix(4))",
+                title: "Preview",
+                icon: "eye",
+                position: .right,
+                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
+            ) {
+                IDEPreviewPanel(project: project)
+                    .environmentObject(ideState)
+            }
+        case .bottom:
+            return DockPanel(
+                id: "console-\(UUID().uuidString.prefix(4))",
+                title: "Console",
+                icon: "terminal.fill",
+                position: .bottom,
+                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
+            ) {
+                IDEConsolePanel()
+                    .environmentObject(ideState)
+            }
+        case .center:
+            guard let document = project.activeDocument ?? project.openDocuments.first else { return nil }
+            return DockPanel(
+                id: "editor-\(UUID().uuidString.prefix(4))",
+                title: document.name,
+                icon: document.icon,
+                position: .center,
+                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
+            ) {
+                IDEEditorPanel(document: document)
+                    .environmentObject(ideState)
+            }
+        default:
+            return nil
         }
     }
     

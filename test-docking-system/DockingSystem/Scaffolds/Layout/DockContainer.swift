@@ -120,7 +120,6 @@ struct InteractiveDropZoneOverlay: View {
             DropZoneIndicator(position: .right, isActive: isDropZone(.right), frame: edgeIndicatorFrame(for: .right))
             DropZoneIndicator(position: .top, isActive: isDropZone(.top), frame: edgeIndicatorFrame(for: .top))
             DropZoneIndicator(position: .bottom, isActive: isDropZone(.bottom), frame: edgeIndicatorFrame(for: .bottom))
-            DropZoneIndicator(position: .center, isActive: isDropZone(.center), frame: centerIndicatorFrame)
         }
     }
     

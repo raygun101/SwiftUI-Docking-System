@@ -126,10 +126,10 @@ public struct DockPanelVisibility: OptionSet, Codable, Hashable {
     
     public static let standard: DockPanelVisibility = [
         .showHeader, .showCloseButton, .showCollapseButton,
-        .allowDrag, .allowResize, .allowTabbing
+        .allowDrag, .allowResize, .allowTabbing, .allowFloat
     ]
     
     public static let minimal: DockPanelVisibility = [
-        .showHeader, .allowDrag
+        .showHeader, .allowDrag, .allowFloat
     ]
 }

@@ -25,32 +25,27 @@ public struct IDEConsolePanel: View {
     
     private var consoleToolbar: some View {
         HStack(spacing: 12) {
-            Text("Console")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(theme.colors.text)
-            
-            Spacer()
-            
-            // Filter picker
             Picker("Filter", selection: $filter) {
                 ForEach(LogFilter.allCases, id: \.self) { f in
                     Text(f.rawValue).tag(f)
                 }
             }
+            .labelsHidden()
             .pickerStyle(.segmented)
             .frame(width: 200)
             
-            // Clear button
+            Spacer()
+            
             Button(action: clearLogs) {
-                Image(systemName: "trash")
+                Label("Clear", systemImage: "trash")
+                    .labelStyle(.iconOnly)
                     .font(.system(size: 12))
             }
             .buttonStyle(.plain)
             .foregroundColor(theme.colors.secondaryText)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(theme.colors.headerBackground)
+        .padding(.vertical, 6)
     }
     
     // MARK: - Output

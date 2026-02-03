@@ -30,7 +30,8 @@ struct DockRegionView: View {
                 }
                 
             case .empty:
-                EmptyView()
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .background(theme.colors.panelBackground)
@@ -109,30 +110,34 @@ struct DockPanelGroupView: View {
     }
     
     private var tabBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
-                ForEach(Array(group.panels.enumerated()), id: \ .element.id) { index, panel in
-                    TabView(
-                        panel: panel,
-                        isActive: index == group.activeTabIndex,
-                        onSelect: {
-                            withAnimation(theme.animations.quickAnimation) {
-                                group.activeTabIndex = index
-                                state.activatePanel(panel)
+        HStack(spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    ForEach(Array(group.panels.enumerated()), id: \ .element.id) { index, panel in
+                        TabView(
+                            panel: panel,
+                            isActive: index == group.activeTabIndex,
+                            onSelect: {
+                                withAnimation(theme.animations.quickAnimation) {
+                                    group.activeTabIndex = index
+                                    state.activatePanel(panel)
+                                }
+                            },
+                            onClose: {
+                                state.closePanel(panel)
                             }
-                        },
-                        onClose: {
-                            state.closePanel(panel)
-                        }
-                    )
+                        )
+                    }
                 }
-                
-                Spacer(minLength: 0)
-                tabActions
+                .padding(.leading, theme.spacing.tabPadding)
+                .padding(.trailing, theme.spacing.tabPadding)
             }
-            .padding(.trailing, 4)
+            .frame(height: 36)
+            .frame(maxWidth: .infinity)
+            
+            tabActions
+                .padding(.trailing, 4)
         }
-        .frame(height: 36)
         .background(theme.colors.tabBackground)
         .overlay(
             Rectangle()
@@ -152,15 +157,6 @@ struct DockPanelGroupView: View {
             .foregroundColor(theme.colors.secondaryText)
             .help("Collapse area")
             
-            Button(action: { state.onRequestNewPanel?(position) }) {
-                Image(systemName: "plus")
-                    .font(.system(size: theme.typography.iconSize - 2))
-            }
-            .buttonStyle(.plain)
-            .foregroundColor(theme.colors.secondaryText)
-            .disabled(state.onRequestNewPanel == nil)
-            .help("Add panel")
-            
             if let activePanel = group.activePanel, activePanel.visibility.contains(.allowFloat) {
                 Button(action: { state.floatPanel(activePanel) }) {
                     Image(systemName: "arrow.up.right.square")
@@ -170,6 +166,15 @@ struct DockPanelGroupView: View {
                 .foregroundColor(theme.colors.secondaryText)
                 .help("Pop out panel")
             }
+            
+            Button(action: { state.onRequestNewPanel?(position) }) {
+                Image(systemName: "plus")
+                    .font(.system(size: theme.typography.iconSize - 2))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(theme.colors.secondaryText)
+            .disabled(state.onRequestNewPanel == nil)
+            .help("Add panel")
         }
         .padding(.leading, 8)
     }
@@ -291,12 +296,25 @@ struct DockPanelHeader: View {
     @State private var isDragging = false
     
     var body: some View {
-        HStack(spacing: theme.spacing.headerPadding / 2) {
-            if let toolbar = resolvedToolbar {
+        let customToolbar = resolvedToolbar
+        return HStack(spacing: theme.spacing.headerPadding / 2) {
+            if let toolbar = customToolbar {
                 toolbar
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                Spacer()
+                HStack(spacing: 6) {
+                    if let icon = panel.icon {
+                        Image(systemName: icon)
+                            .font(.system(size: theme.typography.iconSize - 2))
+                            .foregroundColor(panel.isActive ? theme.colors.accent : theme.colors.secondaryText)
+                    }
+                    Text(panel.title)
+                        .font(theme.typography.headerFont)
+                        .fontWeight(theme.typography.headerFontWeight)
+                        .foregroundColor(panel.isActive ? theme.colors.text : theme.colors.secondaryText)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             
             HStack(spacing: 2) {
@@ -313,8 +331,8 @@ struct DockPanelHeader: View {
                 }
             }
         }
-        .padding(.horizontal, theme.spacing.headerPadding)
-        .padding(.vertical, theme.spacing.headerPadding - 2)
+        .padding(.horizontal, customToolbar == nil ? theme.spacing.headerPadding : 0)
+        .padding(.vertical, customToolbar == nil ? theme.spacing.headerPadding - 2 : 0)
         .background(panel.isActive ? theme.colors.activeHeaderBackground : theme.colors.headerBackground)
         .overlay(
             Rectangle()
@@ -418,6 +436,31 @@ public struct DockPanelToolbar<Content: View>: View {
                 key: PanelToolbarPreferenceKey.self,
                 value: PanelToolbarContainer(view: AnyView(content()))
             )
+    }
+}
+
+// MARK: - Toolbar Styling
+
+/// Shared button style for docked panel toolbars to ensure consistent sizing and hover/press feedback.
+public struct DockToolbarButtonStyle: ButtonStyle {
+    @Environment(\.dockTheme) private var theme
+    
+    public init() {}
+    
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: theme.cornerRadii.button, style: .continuous)
+                    .fill(configuration.isPressed ? theme.colors.hoverBackground : theme.colors.secondaryBackground.opacity(0.55))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: theme.cornerRadii.button, style: .continuous)
+                    .stroke(theme.colors.border.opacity(0.45), lineWidth: 0.5)
+            )
+            .opacity(configuration.isPressed ? 0.85 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

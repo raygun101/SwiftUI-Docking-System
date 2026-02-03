@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import WebKit
 
 // MARK: - Preview Panel
@@ -19,16 +20,11 @@ public struct IDEPreviewPanel: View {
     
     public var body: some View {
         VStack(spacing: 0) {
-            // Preview toolbar
-            previewToolbar
-            
-            Divider()
-            
-            // Preview content
+            DockPanelToolbar { previewToolbar }
             previewContent
         }
         .background(theme.colors.panelBackground)
-        .onChange(of: project.activeDocument?.content) { _, _ in
+        .onReceive(activeDocumentContentPublisher) { _ in
             if isAutoRefresh {
                 refreshPreview()
             }
@@ -38,69 +34,48 @@ public struct IDEPreviewPanel: View {
     // MARK: - Toolbar
     
     private var previewToolbar: some View {
-        HStack(spacing: 12) {
-            // Preview info
+        DockToolbarScaffold(leading: {
             if let document = previewDocument {
-                HStack(spacing: 6) {
-                    Image(systemName: "eye")
-                        .font(.system(size: 12))
-                        .foregroundColor(theme.colors.accent)
-                    
-                    Text("Preview: \(document.name)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(theme.colors.text)
-                        .lineLimit(1)
-                }
+                DockToolbarChip(icon: "display", title: document.name)
             } else {
-                Text("Preview")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(theme.colors.secondaryText)
+                DockToolbarChip(icon: "eye.slash", title: "No Preview")
+            }
+        }, trailing: {
+            DockToolbarIconButton(
+                "arrow.triangle.2.circlepath",
+                accessibilityLabel: "Toggle auto refresh",
+                role: .accent,
+                isActive: isAutoRefresh
+            ) {
+                isAutoRefresh.toggle()
             }
             
-            Spacer()
-            
-            // Auto-refresh toggle
-            Toggle(isOn: $isAutoRefresh) {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 12))
+            DockToolbarIconButton(
+                "arrow.clockwise",
+                accessibilityLabel: "Refresh preview"
+            ) {
+                refreshPreview()
             }
-            .toggleStyle(.button)
-            .buttonStyle(.plain)
-            .foregroundColor(isAutoRefresh ? theme.colors.accent : theme.colors.tertiaryText)
             
-            // Manual refresh
-            Button(action: refreshPreview) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 13))
+            DockToolbarIconButton(
+                "minus.magnifyingglass",
+                accessibilityLabel: "Zoom out"
+            ) {
+                scale = max(0.5, scale - 0.25)
             }
-            .buttonStyle(.plain)
-            .foregroundColor(theme.colors.secondaryText)
+            .disabled(scale <= 0.5)
             
-            // Scale controls
-            HStack(spacing: 4) {
-                Button(action: { scale = max(0.5, scale - 0.25) }) {
-                    Image(systemName: "minus.magnifyingglass")
-                        .font(.system(size: 12))
-                }
-                .buttonStyle(.plain)
-                .foregroundColor(theme.colors.secondaryText)
-                
-                Text("\(Int(scale * 100))%")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(theme.colors.tertiaryText)
-                    .frame(width: 36)
-                
-                Button(action: { scale = min(2.0, scale + 0.25) }) {
-                    Image(systemName: "plus.magnifyingglass")
-                        .font(.system(size: 12))
-                }
-                .buttonStyle(.plain)
-                .foregroundColor(theme.colors.secondaryText)
+            DockToolbarChip(title: "\(Int(scale * 100))%", subtitle: "Zoom")
+                .frame(minWidth: 48)
+            
+            DockToolbarIconButton(
+                "plus.magnifyingglass",
+                accessibilityLabel: "Zoom in"
+            ) {
+                scale = min(2.0, scale + 0.25)
             }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(theme.colors.headerBackground)
+            .disabled(scale >= 2.0)
+        })
     }
     
     // MARK: - Content
@@ -153,6 +128,15 @@ public struct IDEPreviewPanel: View {
     
     private func refreshPreview() {
         refreshTrigger = UUID()
+    }
+
+    private var activeDocumentContentPublisher: AnyPublisher<String, Never> {
+        if let document = project.activeDocument {
+            return document.$content
+                .debounce(for: .milliseconds(75), scheduler: RunLoop.main)
+                .eraseToAnyPublisher()
+        }
+        return Empty().eraseToAnyPublisher()
     }
 }
 
