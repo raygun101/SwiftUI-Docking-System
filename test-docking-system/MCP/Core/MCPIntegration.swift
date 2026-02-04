@@ -64,25 +64,25 @@ public final class MCPIntegration: ObservableObject {
     
     private func registerAllTools() {
         // File tools
-        toolRegistry.register(CreateFileTool())
-        toolRegistry.register(ReadFileTool())
-        toolRegistry.register(EditFileTool())
-        toolRegistry.register(DeleteFileTool())
-        toolRegistry.register(ListDirectoryTool())
-        toolRegistry.register(SearchFilesTool())
-        toolRegistry.register(CopyFileTool())
-        toolRegistry.register(MoveFileTool())
+        registerToolIfNeeded(CreateFileTool())
+        registerToolIfNeeded(ReadFileTool())
+        registerToolIfNeeded(EditFileTool())
+        registerToolIfNeeded(DeleteFileTool())
+        registerToolIfNeeded(ListDirectoryTool())
+        registerToolIfNeeded(SearchFilesTool())
+        registerToolIfNeeded(CopyFileTool())
+        registerToolIfNeeded(MoveFileTool())
         
         // Code/Web tools
-        toolRegistry.register(CreateHTMLPageTool())
-        toolRegistry.register(CreateCSSTool())
-        toolRegistry.register(CreateJavaScriptTool())
-        toolRegistry.register(ExecuteCommandTool())
+        registerToolIfNeeded(CreateHTMLPageTool())
+        registerToolIfNeeded(CreateCSSTool())
+        registerToolIfNeeded(CreateJavaScriptTool())
+        registerToolIfNeeded(ExecuteCommandTool())
         
         // AI tools (already registered in agent, but ensure they're in registry)
-        toolRegistry.register(ImageGenerationTool())
-        toolRegistry.register(TextToSpeechTool())
-        toolRegistry.register(TranscriptionTool())
+        registerToolIfNeeded(ImageGenerationTool())
+        registerToolIfNeeded(TextToSpeechTool())
+        registerToolIfNeeded(TranscriptionTool())
         
         // Project-specific tools
         registerProjectTools()
@@ -301,7 +301,16 @@ public final class MCPIntegration: ObservableObject {
             }
             .build()
         
-        toolRegistry.register(calcTool)
+        registerToolIfNeeded(calcTool)
+    }
+
+    private func registerToolIfNeeded(_ tool: some MCPTool) {
+        let id = tool.definition.id
+        guard toolRegistry.tool(for: id) == nil else {
+            MCPLog.integration.debug("Skipping duplicate tool registration for id \(id)")
+            return
+        }
+        toolRegistry.register(tool)
     }
     
     // MARK: - Code Generation Helpers

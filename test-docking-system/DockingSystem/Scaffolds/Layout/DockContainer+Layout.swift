@@ -141,7 +141,7 @@ extension DockContainer {
             Spacer()
             
             HStack(spacing: 8) {
-                ForEach(state.layout.minimizedPanels, id: \ .id) { panel in
+                ForEach(state.layout.minimizedPanels, id: \.id) { panel in
                     MinimizedPanelButton(panel: panel)
                 }
             }

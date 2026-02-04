@@ -1,4 +1,5 @@
 import Foundation
+import Dispatch
 
 // MARK: - File System Manager
 
@@ -7,6 +8,7 @@ public class IDEFileSystemManager {
     public static let shared = IDEFileSystemManager()
     
     private let fileManager = FileManager.default
+    private let ioQueue = DispatchQueue(label: "IDEFileSystemManager.io", qos: .userInitiated)
     
     private init() {}
     
@@ -90,8 +92,10 @@ public class IDEFileSystemManager {
         let fileURL = directory.appendingPathComponent(name)
         
         do {
-            try content.write(to: fileURL, atomically: true, encoding: .utf8)
-            return fileURL
+            return try await performIO {
+                try content.write(to: fileURL, atomically: true, encoding: .utf8)
+                return fileURL
+            }
         } catch {
             print("Failed to create file: \(error)")
             return nil
@@ -102,8 +106,10 @@ public class IDEFileSystemManager {
         let folderURL = directory.appendingPathComponent(name)
         
         do {
-            try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true)
-            return folderURL
+            return try await performIO { [self] in
+                try self.fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true)
+                return folderURL
+            }
         } catch {
             print("Failed to create folder: \(error)")
             return nil
@@ -112,7 +118,9 @@ public class IDEFileSystemManager {
     
     public func deleteItem(at url: URL) async -> Bool {
         do {
-            try fileManager.removeItem(at: url)
+            try await performIO { [self] in
+                try self.fileManager.removeItem(at: url)
+            }
             return true
         } catch {
             print("Failed to delete item: \(error)")
@@ -124,8 +132,10 @@ public class IDEFileSystemManager {
         let newURL = url.deletingLastPathComponent().appendingPathComponent(newName)
         
         do {
-            try fileManager.moveItem(at: url, to: newURL)
-            return newURL
+            return try await performIO { [self] in
+                try self.fileManager.moveItem(at: url, to: newURL)
+                return newURL
+            }
         } catch {
             print("Failed to rename item: \(error)")
             return nil
@@ -134,7 +144,9 @@ public class IDEFileSystemManager {
     
     public func copyItem(at source: URL, to destination: URL) async -> Bool {
         do {
-            try fileManager.copyItem(at: source, to: destination)
+            try await performIO { [self] in
+                try self.fileManager.copyItem(at: source, to: destination)
+            }
             return true
         } catch {
             print("Failed to copy item: \(error)")
@@ -144,7 +156,9 @@ public class IDEFileSystemManager {
     
     public func moveItem(at source: URL, to destination: URL) async -> Bool {
         do {
-            try fileManager.moveItem(at: source, to: destination)
+            try await performIO { [self] in
+                try self.fileManager.moveItem(at: source, to: destination)
+            }
             return true
         } catch {
             print("Failed to move item: \(error)")
@@ -166,5 +180,20 @@ public class IDEFileSystemManager {
     
     public func cleanupTempProject(at url: URL) {
         try? fileManager.removeItem(at: url)
+    }
+
+    // MARK: - Private Helpers
+
+    private func performIO<T>(_ work: @escaping () throws -> T) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            ioQueue.async {
+                do {
+                    let result = try work()
+                    continuation.resume(returning: result)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
     }
 }

@@ -113,10 +113,18 @@ public final class MCPAgent: ObservableObject {
     }
     
     private func registerBuiltInTools() {
-        // Register image and audio tools
-        toolRegistry.register(ImageGenerationTool())
-        toolRegistry.register(TextToSpeechTool())
-        toolRegistry.register(TranscriptionTool())
+        registerBuiltInTool(ImageGenerationTool())
+        registerBuiltInTool(TextToSpeechTool())
+        registerBuiltInTool(TranscriptionTool())
+    }
+
+    private func registerBuiltInTool(_ tool: some MCPTool) {
+        let toolID = tool.definition.id
+        guard toolRegistry.tool(for: toolID) == nil else {
+            MCPLog.agent.debug("Skipping built-in tool registration for already-registered id \(toolID)")
+            return
+        }
+        toolRegistry.register(tool)
     }
     
     // MARK: - Public API
@@ -229,18 +237,25 @@ public final class MCPAgent: ObservableObject {
         currentThought = "Analyzing request..."
         MCPLog.agent.debug("Running agent loop (iteration start)")
         
-        // Build chat context
-        let tools = toolRegistry.allDefinitions()
-        let context = ChatContext(
+        let context = buildChatContext()
+        let chatMessages = buildChatMessages()
+        let outcome = try await streamResponse(messages: chatMessages, context: context)
+        appendAssistantMessageIfNeeded(outcome)
+        return await handleToolCallsIfNeeded(outcome.toolCalls)
+    }
+
+    private func buildChatContext() -> ChatContext {
+        ChatContext(
             systemPrompt: systemPrompt,
-            tools: tools,
+            tools: toolRegistry.allDefinitions(),
             maxTokens: 4096,
             temperature: 0.7,
             projectContext: projectContextDescription
         )
-        
-        // Convert messages to chat format
-        let chatMessages = messages.compactMap { msg -> ChatMessage? in
+    }
+
+    private func buildChatMessages() -> [ChatMessage] {
+        messages.compactMap { msg -> ChatMessage? in
             switch msg.role {
             case .user:
                 if let text = msg.textContent {
@@ -264,11 +279,11 @@ public final class MCPAgent: ObservableObject {
             }
             return nil
         }
-        
-        // Send to chat service
+    }
+
+    private func streamResponse(messages: [ChatMessage], context: ChatContext) async throws -> StreamOutcome {
         let service = ChatServiceManager.shared.service
-        let stream = try await service.sendMessages(chatMessages, context: context)
-        
+        let stream = try await service.sendMessages(messages, context: context)
         var collectedContent = ""
         var toolCalls: [ToolCall] = []
         var collectedSuggestions: [AgentSuggestion] = []
@@ -321,47 +336,47 @@ public final class MCPAgent: ObservableObject {
         isThinking = false
         streamingContent = ""
         
-        // Add assistant message
-        if !collectedContent.isEmpty || !toolCalls.isEmpty {
-            let assistantMessage = AgentMessage(
-                role: .assistant,
-                content: .text(collectedContent),
-                toolCalls: toolCalls.isEmpty ? nil : toolCalls,
-                suggestions: collectedSuggestions
+        return StreamOutcome(
+            content: collectedContent,
+            toolCalls: toolCalls,
+            suggestions: collectedSuggestions
+        )
+    }
+
+    private func appendAssistantMessageIfNeeded(_ outcome: StreamOutcome) {
+        guard !outcome.content.isEmpty || !outcome.toolCalls.isEmpty else { return }
+        let assistantMessage = AgentMessage(
+            role: .assistant,
+            content: .text(outcome.content),
+            toolCalls: outcome.toolCalls.isEmpty ? nil : outcome.toolCalls,
+            suggestions: outcome.suggestions
+        )
+        messages.append(assistantMessage)
+        suggestions = outcome.suggestions
+    }
+
+    private func handleToolCallsIfNeeded(_ toolCalls: [ToolCall]) async -> Bool {
+        guard !toolCalls.isEmpty else { return false }
+        guard autoExecuteTools else { return false }
+        for call in toolCalls {
+            if Task.isCancelled { break }
+            let result = await toolExecutor.execute(
+                toolID: call.toolID,
+                parameters: call.parameters,
+                context: makeInvocationContext()
             )
-            messages.append(assistantMessage)
-            suggestions = collectedSuggestions
+            var completedCall = call
+            completedCall.status = .completed
+            completedCall.result = result
+            let toolMessage = AgentMessage(
+                role: .tool,
+                content: .toolResult(result),
+                toolCalls: [completedCall]
+            )
+            messages.append(toolMessage)
         }
-        
-        // Execute tool calls if needed
-        if !toolCalls.isEmpty && autoExecuteTools {
-            for call in toolCalls {
-                if Task.isCancelled { break }
-                
-                let result = await toolExecutor.execute(
-                    toolID: call.toolID,
-                    parameters: call.parameters,
-                    context: makeInvocationContext()
-                )
-                
-                // Add tool result message
-                var completedCall = call
-                completedCall.status = .completed
-                completedCall.result = result
-                
-                let toolMessage = AgentMessage(
-                    role: .tool,
-                    content: .toolResult(result),
-                    toolCalls: [completedCall]
-                )
-                messages.append(toolMessage)
-            }
-            
-            pendingToolCalls = []
-            return true // Need another iteration to process tool results
-        }
-        
-        return false // No more processing needed
+        pendingToolCalls = []
+        return true
     }
     
     private func makeInvocationContext() -> InvocationContext {

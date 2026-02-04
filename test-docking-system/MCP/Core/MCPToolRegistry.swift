@@ -44,6 +44,9 @@ public final class MCPToolRegistry: ObservableObject {
     /// Register a tool with the registry
     public func register(_ tool: any MCPTool) {
         let def = tool.definition
+        guard tools[def.id] == nil else {
+            fatalError("[MCPToolRegistry] Attempted to register duplicate tool id: \(def.id)")
+        }
         tools[def.id] = tool
         
         var categoryTools = categories[def.category] ?? []
@@ -63,8 +66,15 @@ public final class MCPToolRegistry: ObservableObject {
         if let tool = tools.removeValue(forKey: id) {
             let category = tool.definition.category
             categories[category]?.removeAll { $0.id == id }
+            pruneCategoryIfNeeded(category)
         }
         toolFactories.removeValue(forKey: id)
+    }
+
+    private func pruneCategoryIfNeeded(_ category: ToolDefinition.ToolCategory) {
+        if categories[category]?.isEmpty == true {
+            categories.removeValue(forKey: category)
+        }
     }
     
     /// Get a tool by ID

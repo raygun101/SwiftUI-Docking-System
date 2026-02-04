@@ -12,11 +12,13 @@ public struct IDEProjectExplorerPanel: View {
     @State private var showNewFileSheet: Bool = false
     @State private var showNewFolderSheet: Bool = false
     @State private var selectedNodeForAction: IDEFileNode?
-    
+    @FocusState private var searchFieldFocused: Bool
+
     public init(project: IDEProject) {
         self.project = project
     }
-    
+
+
     public var body: some View {
         VStack(spacing: 0) {
             DockPanelToolbar { explorerToolbar }
@@ -59,20 +61,49 @@ public struct IDEProjectExplorerPanel: View {
     // MARK: - Search
     
     private var searchBar: some View {
-        HStack(spacing: 8) {
+        let isActive = !searchQuery.isEmpty || searchFieldFocused
+        return HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(theme.colors.tertiaryText)
+                .foregroundColor(isActive ? theme.colors.accent : theme.colors.tertiaryText)
                 .font(.system(size: 12))
             
             TextField("Search files...", text: $searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
+                .foregroundColor(theme.colors.text)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .focused($searchFieldFocused)
+            
+            if !searchQuery.isEmpty {
+                Button {
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                        searchText = ""
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(theme.colors.tertiaryText)
+                        .opacity(0.9)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
         }
-        .padding(8)
-        .background(theme.colors.tertiaryBackground)
-        .cornerRadius(6)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(theme.colors.tertiaryBackground.opacity(isActive ? 1.0 : 0.85))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(isActive ? theme.colors.accent.opacity(0.35) : Color.clear, lineWidth: 1)
+                )
+        )
+        .shadow(color: isActive ? theme.colors.accent.opacity(0.12) : .clear, radius: 8, y: 4)
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
+        .animation(.easeInOut(duration: 0.18), value: isActive)
     }
     
     // MARK: - File Tree
@@ -81,22 +112,27 @@ public struct IDEProjectExplorerPanel: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 if let children = rootNode.sortedChildren {
-                    ForEach(filteredNodes(children)) { node in
-                        FileNodeRow(
-                            node: node,
-                            depth: 0,
-                            searchText: searchText,
-                            selectedURL: ideState.selectedFileURL,
-                            onSelect: { selectedNode in
-                                handleNodeSelection(selectedNode)
-                            },
-                            onToggle: { toggledNode in
-                                toggledNode.isExpanded.toggle()
-                            },
-                            onPreview: { previewNode in
-                                handlePreviewSelection(previewNode)
-                            }
-                        )
+                    let nodes = filteredNodes(children)
+                    if nodes.isEmpty && !searchQuery.isEmpty {
+                        searchEmptyState
+                    } else {
+                        ForEach(nodes) { node in
+                            FileNodeRow(
+                                node: node,
+                                depth: 0,
+                                searchText: searchQuery,
+                                selectedURL: ideState.selectedFileURL,
+                                onSelect: { selectedNode in
+                                    handleNodeSelection(selectedNode)
+                                },
+                                onToggle: { toggledNode in
+                                    toggledNode.isExpanded.toggle()
+                                },
+                                onPreview: { previewNode in
+                                    handlePreviewSelection(previewNode)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -105,13 +141,22 @@ public struct IDEProjectExplorerPanel: View {
     }
     
     private func filteredNodes(_ nodes: [IDEFileNode]) -> [IDEFileNode] {
-        if searchText.isEmpty {
-            return nodes
+        guard !searchQuery.isEmpty else { return nodes }
+        return nodes.filter { nodeMatchesSearch($0, searchText: searchQuery) }
+    }
+
+    private func nodeMatchesSearch(_ node: IDEFileNode, searchText: String) -> Bool {
+        let matchesSelf = node.name.localizedCaseInsensitiveContains(searchText)
+        guard let children = node.sortedChildren else {
+            return matchesSelf
         }
-        return nodes.filter { node in
-            node.name.localizedCaseInsensitiveContains(searchText) ||
-            (node.children?.contains { $0.name.localizedCaseInsensitiveContains(searchText) } ?? false)
+        let childMatches = children.contains { child in
+            nodeMatchesSearch(child, searchText: searchText)
         }
+        if childMatches && !node.isExpanded {
+            node.isExpanded = true
+        }
+        return matchesSelf || childMatches
     }
     
     // MARK: - States
@@ -162,6 +207,26 @@ public struct IDEProjectExplorerPanel: View {
         Task {
             await ideState.refreshProject()
         }
+    }
+
+    private var searchQuery: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var searchEmptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "sparkle.magnifyingglass")
+                .font(.system(size: 32))
+                .foregroundColor(theme.colors.tertiaryText)
+            Text("No matches for \"\(searchQuery)\"")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(theme.colors.secondaryText)
+            Text("Try another name or clear the search to browse the full tree.")
+                .font(.system(size: 11))
+                .foregroundColor(theme.colors.tertiaryText)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
     }
 }
 
@@ -214,9 +279,8 @@ struct FileNodeRow: View {
                     .frame(width: 18)
                 
                 // Name
-                Text(node.name)
+                highlightedName(for: node.name, searchText: searchText)
                     .font(.system(size: 13))
-                    .foregroundColor(theme.colors.text)
                     .lineLimit(1)
                 
                 Spacer()
@@ -265,5 +329,46 @@ struct FileNodeRow: View {
                 }
             }
         }
+    }
+}
+
+private extension FileNodeRow {
+    func highlightedName(for value: String, searchText: String) -> Text {
+        guard !searchText.isEmpty else {
+            return Text(value).foregroundColor(theme.colors.text)
+        }
+
+        let nsValue = value as NSString
+        var cursor = 0
+        let length = nsValue.length
+        var composed = Text("")
+        let highlightColor = theme.colors.accent
+
+        while cursor < length {
+            let remainingLength = length - cursor
+            let range = NSRange(location: cursor, length: remainingLength)
+            let match = nsValue.range(of: searchText, options: [.caseInsensitive], range: range)
+
+            if match.location == NSNotFound {
+                let tail = nsValue.substring(with: range)
+                composed = composed + Text(tail).foregroundColor(theme.colors.text)
+                break
+            }
+
+            if match.location > cursor {
+                let prefixRange = NSRange(location: cursor, length: match.location - cursor)
+                let prefix = nsValue.substring(with: prefixRange)
+                composed = composed + Text(prefix).foregroundColor(theme.colors.text)
+            }
+
+            let matchString = nsValue.substring(with: match)
+            composed = composed + Text(matchString)
+                .foregroundColor(highlightColor)
+                .fontWeight(.semibold)
+
+            cursor = match.location + match.length
+        }
+
+        return composed
     }
 }

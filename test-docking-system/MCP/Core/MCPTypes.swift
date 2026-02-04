@@ -446,6 +446,23 @@ public enum StreamEvent: Sendable {
     case error(ToolError)
 }
 
+/// Aggregated result produced after consuming the streaming response
+public struct StreamOutcome: Sendable {
+    public let content: String
+    public let toolCalls: [ToolCall]
+    public let suggestions: [AgentSuggestion]
+
+    public init(
+        content: String = "",
+        toolCalls: [ToolCall] = [],
+        suggestions: [AgentSuggestion] = []
+    ) {
+        self.content = content
+        self.toolCalls = toolCalls
+        self.suggestions = suggestions
+    }
+}
+
 /// Configuration for API services
 public struct APIConfiguration: Sendable {
     public let apiKey: String
