@@ -37,6 +37,16 @@ public struct IDEFileType: Identifiable, Equatable {
     public static func == (lhs: IDEFileType, rhs: IDEFileType) -> Bool {
         lhs.id == rhs.id
     }
+    
+    /// Whether this file type represents binary (non-text) content
+    public var isBinary: Bool {
+        switch editorType {
+        case .image, .binary:
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Editor Types

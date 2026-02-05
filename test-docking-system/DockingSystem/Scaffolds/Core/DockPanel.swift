@@ -7,6 +7,8 @@ public enum DockPanelUserInfoKey {
     public static let onCloseHandler = "DockPanelUserInfoKey.onClose"
     public static let onActivateHandler = "DockPanelUserInfoKey.onActivate"
     public static let toolbarProvider = "DockPanelUserInfoKey.toolbarProvider"
+    public static let isDirtyProvider = "DockPanelUserInfoKey.isDirtyProvider"
+    public static let fileURL = "DockPanelUserInfoKey.fileURL"
 }
 
 // MARK: - Dock Panel Model

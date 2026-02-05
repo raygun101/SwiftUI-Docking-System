@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - Project Explorer Panel
 
@@ -130,6 +131,15 @@ public struct IDEProjectExplorerPanel: View {
                                 },
                                 onPreview: { previewNode in
                                     handlePreviewSelection(previewNode)
+                                },
+                                onOpenAs: { node, descriptor in
+                                    handleOpenAs(node, descriptor: descriptor)
+                                },
+                                onSave: { node in
+                                    handleSave(node)
+                                },
+                                onRevert: { node in
+                                    handleRevert(node)
                                 }
                             )
                         }
@@ -208,6 +218,29 @@ public struct IDEProjectExplorerPanel: View {
             await ideState.refreshProject()
         }
     }
+    
+    private func handleOpenAs(_ node: IDEFileNode, descriptor: ContentPanelDescriptor) {
+        guard !node.isDirectory else { return }
+        Task {
+            await ideState.openFile(node.url)
+            // TODO: Open with specific panel descriptor
+            // For now, just open the file - panel switching will be handled in future iteration
+        }
+    }
+    
+    private func handleSave(_ node: IDEFileNode) {
+        guard !node.isDirectory else { return }
+        Task {
+            _ = await IDEContentStore.shared.save(url: node.url)
+        }
+    }
+    
+    private func handleRevert(_ node: IDEFileNode) {
+        guard !node.isDirectory else { return }
+        Task {
+            await IDEContentStore.shared.revert(url: node.url)
+        }
+    }
 
     private var searchQuery: String {
         searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -240,9 +273,43 @@ struct FileNodeRow: View {
     let onSelect: (IDEFileNode) -> Void
     let onToggle: (IDEFileNode) -> Void
     let onPreview: (IDEFileNode) -> Void
+    var onOpenAs: ((IDEFileNode, ContentPanelDescriptor) -> Void)?
+    var onSave: ((IDEFileNode) -> Void)?
+    var onRevert: ((IDEFileNode) -> Void)?
     
     @Environment(\.dockTheme) var theme
     @State private var isHovered: Bool = false
+    @State private var dirtyState: Bool = false
+    
+    private let contentStore = IDEContentStore.shared
+    
+    private func availablePanels(for node: IDEFileNode) -> [ContentPanelDescriptor] {
+        ContentPanelRegistry.shared.availablePanels(for: node.fileType)
+    }
+    
+    private func hasBuffer(for node: IDEFileNode) -> Bool {
+        contentStore.hasBuffer(for: node.url)
+    }
+    
+    private func isBufferDirty(for node: IDEFileNode) -> Bool {
+        contentStore.buffer(for: node.url)?.isDirty ?? false
+    }
+    
+    private var dirtyPublisher: AnyPublisher<Bool, Never>? {
+        guard !node.isDirectory else { return nil }
+        return NotificationCenter.default.publisher(for: .contentBufferDirtyStateChanged)
+            .compactMap { notification -> Bool? in
+                guard let changedURL = notification.userInfo?["url"] as? URL,
+                      let isDirty = notification.userInfo?["isDirty"] as? Bool,
+                      changedURL == node.url else {
+                    return nil
+                }
+                return isDirty
+            }
+            .debounce(for: .milliseconds(150), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .eraseToAnyPublisher()
+    }
     
     var body: some View {
         let isSelected = selectedURL == node.url
@@ -278,10 +345,19 @@ struct FileNodeRow: View {
                     .foregroundColor(node.iconColor)
                     .frame(width: 18)
                 
-                // Name
-                highlightedName(for: node.name, searchText: searchText)
-                    .font(.system(size: 13))
-                    .lineLimit(1)
+                // Name with dirty indicator
+                HStack(spacing: 4) {
+                    highlightedName(for: node.name, searchText: searchText)
+                        .font(.system(size: 13))
+                        .lineLimit(1)
+                    
+                    // Dirty indicator
+                    if !node.isDirectory && dirtyState {
+                        Circle()
+                            .fill(theme.colors.accent)
+                            .frame(width: 6, height: 6)
+                    }
+                }
                 
                 Spacer()
             }
@@ -308,8 +384,29 @@ struct FileNodeRow: View {
                     Button("Open", action: { onToggle(node) })
                 } else {
                     Button("Open", action: { onSelect(node) })
-                    if node.fileType.canPreview {
-                        Button("Open Preview", action: { onPreview(node) })
+                    
+                    // Open As submenu with available panel types
+                    Menu("Open As") {
+                        ForEach(availablePanels(for: node)) { descriptor in
+                            Button {
+                                onOpenAs?(node, descriptor)
+                            } label: {
+                                Label(descriptor.name, systemImage: descriptor.icon)
+                            }
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    // Save/Revert actions (only if file has a buffer)
+                    if hasBuffer(for: node) {
+                        if dirtyState {
+                            Button("Save", action: { onSave?(node) })
+                            Button("Revert", action: { onRevert?(node) })
+                        } else {
+                            Button("Save", action: { onSave?(node) })
+                                .disabled(true)
+                        }
                     }
                 }
             }
@@ -324,10 +421,19 @@ struct FileNodeRow: View {
                         selectedURL: selectedURL,
                         onSelect: onSelect,
                         onToggle: onToggle,
-                        onPreview: onPreview
+                        onPreview: onPreview,
+                        onOpenAs: onOpenAs,
+                        onSave: onSave,
+                        onRevert: onRevert
                     )
                 }
             }
+        }
+        .onAppear {
+            dirtyState = isBufferDirty(for: node)
+        }
+        .onReceive(dirtyPublisher ?? Empty<Bool, Never>().eraseToAnyPublisher()) { isDirty in
+            dirtyState = isDirty
         }
     }
 }

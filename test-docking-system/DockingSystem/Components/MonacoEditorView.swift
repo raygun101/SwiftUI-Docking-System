@@ -228,11 +228,15 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
         var isEditorReady = false
         var pendingCode: String?
         var pendingComparison: String?
+        var lastAppliedCode: String
+        var lastAppliedComparison: String?
         
         init(_ parent: MonacoEditorRepresentable) {
             self.parent = parent
             self.lastKnownCode = parent.code
             self.lastComparisonContent = parent.comparisonContent
+            self.lastAppliedCode = parent.code
+            self.lastAppliedComparison = parent.comparisonContent
         }
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -247,6 +251,7 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
             case "contentChange":
                 if let content = dict["content"] as? String {
                     lastKnownCode = content
+                    lastAppliedCode = content
                     DispatchQueue.main.async {
                         self.parent.code = content
                         self.parent.onContentChange?(content)
@@ -263,33 +268,56 @@ struct MonacoEditorRepresentable: UIViewRepresentable {
         }
         
         func applyPendingContentIfReady() {
-            guard isEditorReady,
-                  let webView,
-                  let code = pendingCode else { return }
-            let comparison = pendingComparison ?? parent.comparisonContent
-            let escapedCode = code.replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "`", with: "\\`")
-                .replacingOccurrences(of: "$", with: "\\$")
-            let escapedComparison = (comparison ?? "").replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "`", with: "\\`")
-                .replacingOccurrences(of: "$", with: "\\$")
-            let js = """
-            if (window.editor && window.monaco) {
-                if (window.isDiffMode) {
-                    const models = window.editor.getModel();
-                    if (models && models.modified) {
-                        models.modified.setValue(`\(escapedCode)`);
-                    }
-                    if (models && models.original) {
-                        models.original.setValue(`\(escapedComparison)`);
-                    }
+            guard isEditorReady, let webView else { return }
+            let codeToApply = pendingCode ?? lastKnownCode
+            let comparisonToApply = pendingComparison ?? parent.comparisonContent
+            let shouldUpdateCode = pendingCode != nil && codeToApply != lastAppliedCode
+            let shouldUpdateComparison: Bool
+            if let comparisonToApply {
+                shouldUpdateComparison = (lastAppliedComparison ?? "") != comparisonToApply
+            } else {
+                shouldUpdateComparison = false
+            }
+            guard shouldUpdateCode || shouldUpdateComparison else {
+                pendingCode = nil
+                pendingComparison = nil
+                return
+            }
+            var jsSegments: [String] = ["if (window.editor && window.monaco) {"]
+            if shouldUpdateCode {
+                let escapedCode = codeToApply
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "`", with: "\\`")
+                    .replacingOccurrences(of: "$", with: "\\$")
+                if parent.comparisonContent != nil || windowIsDiffMode() {
+                    jsSegments.append("    if (window.isDiffMode) { const models = window.editor.getModel(); if (models && models.modified) { models.modified.setValue(`\(escapedCode)`); } } else { window.editor.setValue(`\(escapedCode)`); }")
                 } else {
-                    window.editor.setValue(`\(escapedCode)`);
+                    jsSegments.append("    window.editor.setValue(`\(escapedCode)`);")
                 }
             }
-            """
+            if shouldUpdateComparison, let comparisonString = comparisonToApply {
+                let escapedComparison = comparisonString
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "`", with: "\\`")
+                    .replacingOccurrences(of: "$", with: "\\$")
+                jsSegments.append("    if (window.isDiffMode) { const models = window.editor.getModel(); if (models && models.original) { models.original.setValue(`\(escapedComparison)`); } }")
+            }
+            jsSegments.append("}")
+            let js = jsSegments.joined(separator: "\n")
             webView.evaluateJavaScript(js, completionHandler: nil)
+            if shouldUpdateCode {
+                lastAppliedCode = codeToApply
+            }
+            if shouldUpdateComparison, let comparisonToApply {
+                lastAppliedComparison = comparisonToApply
+            }
             pendingCode = nil
+            pendingComparison = nil
+        }
+        
+        private func windowIsDiffMode() -> Bool {
+            // We can't query JS synchronously; rely on current parent comparison state
+            return parent.comparisonContent != nil || lastComparisonContent != nil
         }
     }
 }

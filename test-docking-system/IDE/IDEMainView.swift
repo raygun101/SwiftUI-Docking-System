@@ -6,12 +6,16 @@ import SwiftUI
 public struct IDEMainView: View {
     @StateObject private var ideState = IDEState.shared
     @StateObject private var dockState: DockState
+    @StateObject private var layoutManager: IDELayoutManager
     @Environment(\.dockTheme) var theme
     
     @State private var isInitialized = false
     
     public init() {
         _dockState = StateObject(wrappedValue: DockState(layout: IDEMainView.createDefaultLayout()))
+        // Initialize layout manager with project URL (will be updated when project loads)
+        let defaultURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        _layoutManager = StateObject(wrappedValue: IDELayoutManager(projectURL: defaultURL))
     }
     
     public var body: some View {
@@ -43,11 +47,14 @@ public struct IDEMainView: View {
             Spacer()
             HStack {
                 Spacer()
-                WorkspaceSwitcherBar(
-                    workspaces: ideState.workspaceManager.workspaces,
-                    activeIndex: $ideState.workspaceManager.activeWorkspaceIndex,
-                    onLayoutChange: { layoutType in
-                        applyLayout(layoutType)
+                LayoutProfileSwitcher(
+                    profiles: layoutManager.profiles,
+                    activeProfileID: layoutManager.activeProfileID,
+                    onProfileSelect: { profileID in
+                        layoutManager.switchToProfile(profileID)
+                        if let profile = layoutManager.profiles.first(where: { $0.id == profileID }) {
+                            applyLayoutProfile(profile)
+                        }
                     }
                 )
                 .padding(.trailing, 16)
@@ -137,59 +144,33 @@ public struct IDEMainView: View {
     
     // MARK: - Layout Management
     
-    private func applyLayout(_ layoutType: IDELayoutType) {
-        guard let project = ideState.workspaceManager.project else { return }
-        
+    private func applyLayoutProfile(_ profile: IDELayoutProfile) {
         withAnimation(theme.animations.springAnimation) {
-            switch layoutType {
-            case .coding:
-                applyCodingLayout(project: project)
-            case .preview:
-                applyPreviewLayout(project: project)
-            case .debug:
-                applyDebugLayout(project: project)
-            case .design:
-                applyDesignLayout(project: project)
-            case .custom:
-                break
-            }
+            // Apply region sizes and visibility
+            let regions = profile.dockRegions
+            dockState.layout.leftWidth = regions.leftWidth
+            dockState.layout.rightWidth = regions.rightWidth
+            dockState.layout.bottomHeight = regions.bottomHeight
+            dockState.layout.isLeftCollapsed = !regions.leftVisible
+            dockState.layout.isRightCollapsed = !regions.rightVisible
+            dockState.layout.isBottomCollapsed = !regions.bottomVisible
         }
     }
     
-    private func applyCodingLayout(project: IDEProject) {
-        dockState.layout.leftWidth = 250
-        dockState.layout.rightWidth = 0
-        dockState.layout.bottomHeight = 150
-        dockState.layout.isRightCollapsed = true
-        dockState.layout.isLeftCollapsed = false
-        dockState.layout.isBottomCollapsed = false
-    }
-    
-    private func applyPreviewLayout(project: IDEProject) {
-        dockState.layout.leftWidth = 200
-        dockState.layout.rightWidth = 350
-        dockState.layout.bottomHeight = 0
-        dockState.layout.isRightCollapsed = false
-        dockState.layout.isLeftCollapsed = false
-        dockState.layout.isBottomCollapsed = true
-    }
-    
-    private func applyDebugLayout(project: IDEProject) {
-        dockState.layout.leftWidth = 250
-        dockState.layout.rightWidth = 250
-        dockState.layout.bottomHeight = 200
-        dockState.layout.isRightCollapsed = false
-        dockState.layout.isLeftCollapsed = false
-        dockState.layout.isBottomCollapsed = false
-    }
-    
-    private func applyDesignLayout(project: IDEProject) {
-        dockState.layout.leftWidth = 0
-        dockState.layout.rightWidth = 400
-        dockState.layout.bottomHeight = 0
-        dockState.layout.isRightCollapsed = false
-        dockState.layout.isLeftCollapsed = true
-        dockState.layout.isBottomCollapsed = true
+    // Legacy support for IDELayoutType
+    private func applyLayout(_ layoutType: IDELayoutType) {
+        switch layoutType {
+        case .coding:
+            if let profile = layoutManager.profiles.first(where: { $0.name == "Coding" }) {
+                applyLayoutProfile(profile)
+            }
+        case .preview:
+            if let profile = layoutManager.profiles.first(where: { $0.name == "Preview" }) {
+                applyLayoutProfile(profile)
+            }
+        case .debug, .design, .custom:
+            break
+        }
     }
     
     // MARK: - Default Layout
@@ -254,6 +235,72 @@ struct WorkspaceButton: View {
                 
                 Text(workspace.name)
                     .font(.system(size: 9, weight: .medium))
+            }
+            .foregroundColor(isActive ? theme.colors.accent : theme.colors.secondaryText)
+            .frame(width: 56, height: 48)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isActive ? theme.colors.accent.opacity(0.15) : (isHovered ? theme.colors.hoverBackground : Color.clear))
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+}
+
+// MARK: - Layout Profile Switcher
+
+struct LayoutProfileSwitcher: View {
+    let profiles: [IDELayoutProfile]
+    let activeProfileID: UUID?
+    let onProfileSelect: (UUID) -> Void
+    
+    @Environment(\.dockTheme) var theme
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(profiles) { profile in
+                LayoutProfileButton(
+                    profile: profile,
+                    isActive: profile.id == activeProfileID,
+                    onTap: {
+                        onProfileSelect(profile.id)
+                    }
+                )
+            }
+        }
+        .padding(6)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(theme.colors.panelBackground.opacity(0.95))
+                .shadow(color: theme.colors.shadowColor.opacity(0.3), radius: 10, y: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(theme.colors.border.opacity(0.5), lineWidth: 1)
+        )
+    }
+}
+
+struct LayoutProfileButton: View {
+    let profile: IDELayoutProfile
+    let isActive: Bool
+    let onTap: () -> Void
+    
+    @Environment(\.dockTheme) var theme
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 4) {
+                Image(systemName: profile.icon)
+                    .font(.system(size: 16, weight: isActive ? .semibold : .regular))
+                
+                Text(profile.name)
+                    .font(.system(size: 9, weight: .medium))
+                    .lineLimit(1)
             }
             .foregroundColor(isActive ? theme.colors.accent : theme.colors.secondaryText)
             .frame(width: 56, height: 48)

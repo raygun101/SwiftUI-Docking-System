@@ -43,6 +43,8 @@ public class IDEProject: ObservableObject, Identifiable {
     
     // MARK: - Document Management
     
+    private let contentStore = IDEContentStore.shared
+    
     public func openDocument(at url: URL) async -> IDEDocument? {
         // Check if already open
         if let existing = openDocuments.first(where: { $0.fileURL == url }) {
@@ -50,34 +52,38 @@ public class IDEProject: ObservableObject, Identifiable {
             return existing
         }
         
-        // Load document
-        guard let document = await IDEDocument.load(from: url) else {
+        // Acquire buffer from content store
+        guard let buffer = await contentStore.acquireBuffer(for: url) else {
             return nil
         }
         
-        await MainActor.run {
-            openDocuments.append(document)
-            activeDocument = document
+        // Create document backed by buffer
+        let document = await MainActor.run {
+            let doc = IDEDocument(fileURL: url, buffer: buffer)
+            openDocuments.append(doc)
+            activeDocument = doc
+            return doc
         }
         
         return document
     }
     
+    @MainActor
     public func closeDocument(_ document: IDEDocument) {
         openDocuments.removeAll { $0.id == document.id }
         if activeDocument?.id == document.id {
             activeDocument = openDocuments.last
         }
+        // Release buffer reference (buffer persists if dirty or has other references)
+        contentStore.releaseBuffer(for: document.fileURL)
     }
     
     public func saveDocument(_ document: IDEDocument) async -> Bool {
-        return await document.save()
+        return await contentStore.save(url: document.fileURL)
     }
     
     public func saveAllDocuments() async {
-        for document in openDocuments where document.isDirty {
-            _ = await document.save()
-        }
+        _ = await contentStore.saveAll()
     }
     
     // MARK: - File Watching
@@ -182,128 +188,108 @@ public class IDEFileNode: ObservableObject, Identifiable {
 
 // MARK: - Document Model
 
-/// Represents an open document in the IDE
+/// Represents an open document in the IDE, backed by a ContentBuffer
 public class IDEDocument: ObservableObject, Identifiable {
     public let id: UUID
     public let fileURL: URL
     public let fileType: IDEFileType
     
-    @Published public var content: String
-    @Published public var isDirty: Bool = false
-    @Published public var isLoading: Bool = false
-    @Published public var lastModified: Date?
-    @Published public var agentChange: AgentChangeSnapshot?
+    /// The underlying content buffer from IDEContentStore
+    public let buffer: ContentBuffer
     
-    private var originalContent: String
+    @Published public var isLoading: Bool = false
+    
+    private var cancellables = Set<AnyCancellable>()
     
     public var name: String { fileURL.lastPathComponent }
     public var icon: String { fileType.icon }
     
-    public init(fileURL: URL, content: String) {
+    // MARK: - Buffer-Delegated Properties
+    
+    public var content: String {
+        get { buffer.currentContent }
+        set { buffer.updateContent(newValue, source: .user) }
+    }
+    
+    public var isDirty: Bool { buffer.isDirty }
+    public var lastModified: Date? { buffer.lastModified }
+    public var agentChange: AgentChangeInfo? { buffer.agentChangeSnapshot }
+    
+    // MARK: - Initialization
+    
+    public init(fileURL: URL, buffer: ContentBuffer) {
         self.id = UUID()
         self.fileURL = fileURL
-        self.content = content
-        self.originalContent = content
+        self.buffer = buffer
         self.fileType = IDEFileTypeRegistry.shared.fileType(for: fileURL)
-        self.lastModified = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.modificationDate] as? Date
+        
+        // Forward buffer changes to trigger SwiftUI updates
+        buffer.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+    }
+    
+    /// Legacy initializer for compatibility - creates a detached buffer
+    public convenience init(fileURL: URL, content: String) {
+        let buffer = ContentBuffer(url: fileURL, diskContent: content, currentContent: content)
+        self.init(fileURL: fileURL, buffer: buffer)
     }
     
     public static func load(from url: URL) async -> IDEDocument? {
-        do {
-            let content = try String(contentsOf: url, encoding: .utf8)
-            return await MainActor.run {
-                IDEDocument(fileURL: url, content: content)
-            }
-        } catch {
-            print("Failed to load document: \(error)")
+        guard let buffer = await IDEContentStore.shared.acquireBuffer(for: url) else {
             return nil
+        }
+        return await MainActor.run {
+            IDEDocument(fileURL: url, buffer: buffer)
         }
     }
     
+    // MARK: - Content Operations
+    
     public func save() async -> Bool {
-        do {
-            try content.write(to: fileURL, atomically: true, encoding: .utf8)
-            await MainActor.run {
-                originalContent = content
-                isDirty = false
-                lastModified = Date()
-            }
-            return true
-        } catch {
-            print("Failed to save document: \(error)")
-            return false
-        }
+        return await IDEContentStore.shared.save(url: fileURL)
     }
     
     public func reloadFromDisk(force: Bool = false) async {
         await MainActor.run { isLoading = true }
         
-        do {
-            let newContent = try String(contentsOf: fileURL, encoding: .utf8)
-            await MainActor.run {
-                if force || !isDirty {
-                    content = newContent
-                    originalContent = newContent
-                    isDirty = false
-                }
-                lastModified = Date()
-                isLoading = false
-            }
-        } catch {
-            await MainActor.run { isLoading = false }
+        if force || !isDirty {
+            await IDEContentStore.shared.revert(url: fileURL)
         }
+        
+        await MainActor.run { isLoading = false }
     }
     
     public func updateContent(_ newContent: String) {
-        content = newContent
-        isDirty = content != originalContent
+        buffer.updateContent(newContent, source: .user)
     }
     
     public func revert() {
-        content = originalContent
-        isDirty = false
+        buffer.revertToDisk(content: buffer.diskContent)
     }
     
+    // MARK: - Agent Change Tracking
+    
     public func recordAgentChange(oldContent: String, newContent: String) {
-        let preservedOrigin = agentChange?.oldContent ?? oldContent
-        agentChange = AgentChangeSnapshot(
-            oldContent: preservedOrigin,
-            newContent: newContent,
-            timestamp: Date()
-        )
+        buffer.updateContent(newContent, source: .agent(toolID: nil))
     }
     
     public func clearAgentChange() {
-        agentChange = nil
+        buffer.acceptAgentChange()
     }
 
     public func acceptAgentChange() {
-        guard agentChange != nil else { return }
-        agentChange = nil
-        originalContent = content
-        isDirty = false
-        lastModified = Date()
+        buffer.acceptAgentChange()
     }
 
     public func rejectAgentChange() async {
-        guard let snapshot = agentChange else { return }
-        do {
-            try snapshot.oldContent.write(to: fileURL, atomically: true, encoding: .utf8)
-            await MainActor.run {
-                content = snapshot.oldContent
-                originalContent = snapshot.oldContent
-                isDirty = false
-                agentChange = nil
-                lastModified = Date()
-            }
-        } catch {
-            print("Failed to reject agent change: \(error.localizedDescription)")
-        }
+        buffer.rejectAgentChange()
+        _ = await save()
     }
 }
 
-public struct AgentChangeSnapshot {
-    public let oldContent: String
-    public let newContent: String
-    public let timestamp: Date
-}
+// AgentChangeSnapshot is now AgentChangeInfo in IDEContentStore.swift
+public typealias AgentChangeSnapshot = AgentChangeInfo

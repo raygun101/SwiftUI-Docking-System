@@ -83,10 +83,9 @@ public final class AgentIDEBridge: ObservableObject {
         // Get the active document and insert code
         if let project = ideState?.workspaceManager.project,
            let activeDoc = project.activeDocument {
-            // Append code to current content
+            // Append code to current content (dirty state managed automatically by buffer)
             let newContent = activeDoc.content + "\n\n" + code
-            activeDoc.content = newContent
-            activeDoc.isDirty = true
+            activeDoc.updateContent(newContent)
             
             print("[AgentBridge] Inserted \(language) code into \(activeDoc.name)")
         } else {

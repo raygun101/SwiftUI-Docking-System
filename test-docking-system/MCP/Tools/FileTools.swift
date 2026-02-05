@@ -94,6 +94,15 @@ public struct ReadFileTool: MCPTool {
             ))
         }
         
+        // Check IDEContentStore first for in-memory content (user edits)
+        let contentStore = await IDEContentStore.shared
+        if let buffer = await MainActor.run(body: { contentStore.buffer(for: fileURL) }) {
+            let content = await MainActor.run { buffer.currentContent }
+            let language = detectLanguage(for: fileURL.pathExtension)
+            return .success(.code(content, language: language))
+        }
+        
+        // Fall back to disk
         do {
             let content = try String(contentsOf: fileURL, encoding: .utf8)
             let language = detectLanguage(for: fileURL.pathExtension)
@@ -157,53 +166,70 @@ public struct EditFileTool: MCPTool {
             return .error(ToolError(code: "FILE_NOT_FOUND", message: "File not found: \(path)"))
         }
         
-        do {
-            let originalContent = try String(contentsOf: fileURL, encoding: .utf8)
-            var updatedContent = originalContent
-            
-            if let oldContent = invocation.parameters["old_content"]?.stringValue, !oldContent.isEmpty {
-                // Replace mode
-                guard updatedContent.contains(oldContent) else {
-                    return .error(ToolError(
-                        code: "CONTENT_NOT_FOUND",
-                        message: "Could not find the specified content to replace"
-                    ))
-                }
-                updatedContent = updatedContent.replacingOccurrences(of: oldContent, with: newContent)
-            } else {
-                // Insert mode
-                let position = invocation.parameters["position"]?.stringValue ?? "end"
-                switch position {
-                case "start":
-                    updatedContent = newContent + updatedContent
-                case "end":
+        // Get content from IDEContentStore if available, otherwise from disk
+        let contentStore = await IDEContentStore.shared
+        let originalContent: String
+        if let buffer = await MainActor.run(body: { contentStore.buffer(for: fileURL) }) {
+            originalContent = await MainActor.run { buffer.currentContent }
+        } else {
+            do {
+                originalContent = try String(contentsOf: fileURL, encoding: .utf8)
+            } catch {
+                return .error(.executionFailed("Failed to read file: \(error.localizedDescription)"))
+            }
+        }
+        
+        var updatedContent = originalContent
+        
+        if let oldContent = invocation.parameters["old_content"]?.stringValue, !oldContent.isEmpty {
+            // Replace mode
+            guard updatedContent.contains(oldContent) else {
+                return .error(ToolError(
+                    code: "CONTENT_NOT_FOUND",
+                    message: "Could not find the specified content to replace"
+                ))
+            }
+            updatedContent = updatedContent.replacingOccurrences(of: oldContent, with: newContent)
+        } else {
+            // Insert mode
+            let position = invocation.parameters["position"]?.stringValue ?? "end"
+            switch position {
+            case "start":
+                updatedContent = newContent + updatedContent
+            case "end":
+                updatedContent = updatedContent + newContent
+            default:
+                if let lineNum = Int(position) {
+                    var lines = updatedContent.components(separatedBy: "\n")
+                    let index = max(0, min(lineNum - 1, lines.count))
+                    lines.insert(newContent, at: index)
+                    updatedContent = lines.joined(separator: "\n")
+                } else {
                     updatedContent = updatedContent + newContent
-                default:
-                    if let lineNum = Int(position) {
-                        var lines = updatedContent.components(separatedBy: "\n")
-                        let index = max(0, min(lineNum - 1, lines.count))
-                        lines.insert(newContent, at: index)
-                        updatedContent = lines.joined(separator: "\n")
-                    } else {
-                        updatedContent = updatedContent + newContent
-                    }
                 }
             }
-            
-            try updatedContent.write(to: fileURL, atomically: true, encoding: .utf8)
-            NotificationCenter.default.post(
-                name: .agentFileDidChange,
-                object: nil,
-                userInfo: [
-                    "url": fileURL,
-                    "oldContent": originalContent,
-                    "newContent": updatedContent
-                ]
-            )
-            return .success(.text("Updated file: \(path)"))
-        } catch {
-            return .error(.executionFailed("Failed to edit file: \(error.localizedDescription)"))
         }
+        
+        // Update through IDEContentStore (handles in-memory buffers and notification)
+        await contentStore.updateContent(for: fileURL, with: updatedContent, source: .agent(toolID: "edit_file"))
+        
+        // Also write to disk
+        do {
+            try updatedContent.write(to: fileURL, atomically: true, encoding: .utf8)
+        } catch {
+            return .error(.executionFailed("Failed to write file: \(error.localizedDescription)"))
+        }
+        
+        NotificationCenter.default.post(
+            name: .agentFileDidChange,
+            object: nil,
+            userInfo: [
+                "url": fileURL,
+                "oldContent": originalContent,
+                "newContent": updatedContent
+            ]
+        )
+        return .success(.text("Updated file: \(path)"))
     }
 }
 

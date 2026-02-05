@@ -132,7 +132,7 @@ public struct IDEPreviewPanel: View {
 
     private var activeDocumentContentPublisher: AnyPublisher<String, Never> {
         if let document = project.activeDocument {
-            return document.$content
+            return document.buffer.$currentContent
                 .debounce(for: .milliseconds(75), scheduler: RunLoop.main)
                 .eraseToAnyPublisher()
         }

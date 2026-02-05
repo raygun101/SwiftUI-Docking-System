@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - Dock Region View
 
@@ -207,9 +208,41 @@ struct TabView: View {
     @Environment(\.dockTheme) var theme
     @State private var isHovered = false
     @State private var isDragging = false
+    @State private var dirtyState = false
+    
+    private var dirtyProvider: (() -> Bool)? {
+        panel.userInfo[DockPanelUserInfoKey.isDirtyProvider] as? () -> Bool
+    }
+    
+    private var fileURL: URL? {
+        panel.userInfo[DockPanelUserInfoKey.fileURL] as? URL
+    }
+    
+    private var dirtyPublisher: AnyPublisher<Bool, Never>? {
+        guard let fileURL else { return nil }
+        return NotificationCenter.default.publisher(for: .contentBufferDirtyStateChanged)
+            .compactMap { notification -> Bool? in
+                guard let changedURL = notification.userInfo?["url"] as? URL,
+                      let isDirty = notification.userInfo?["isDirty"] as? Bool,
+                      changedURL == fileURL else {
+                    return nil
+                }
+                return isDirty
+            }
+            .debounce(for: .milliseconds(150), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .eraseToAnyPublisher()
+    }
     
     var body: some View {
         HStack(spacing: 4) {
+            // Dirty indicator dot
+            if dirtyState {
+                Circle()
+                    .fill(theme.colors.accent)
+                    .frame(width: 6, height: 6)
+            }
+            
             if let icon = panel.icon {
                 Image(systemName: icon)
                     .font(.system(size: max(theme.typography.iconSize - 2, 10)))
@@ -281,6 +314,12 @@ struct TabView: View {
         .opacity(state.draggedPanel?.id == panel.id ? 0.4 : 1.0)
         .scaleEffect(state.draggedPanel?.id == panel.id ? 0.95 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: state.draggedPanel?.id)
+        .onAppear {
+            dirtyState = dirtyProvider?() ?? false
+        }
+        .onReceive(dirtyPublisher ?? Empty<Bool, Never>().eraseToAnyPublisher()) { isDirty in
+            dirtyState = isDirty
+        }
     }
 }
 

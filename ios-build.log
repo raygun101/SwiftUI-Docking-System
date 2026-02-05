@@ -1,0 +1,344 @@
+Command line invocation:
+    /Applications/Developer/Xcode.app/Contents/Developer/usr/bin/xcodebuild -scheme test-docking-system -configuration Debug -sdk iphonesimulator build
+
+Build settings from command line:
+    SDKROOT = iphonesimulator18.5
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'test-docking-system' in project 'test-docking-system' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Developer/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/F3725413/Downloads/test-docking-system/test-docking-system/Assets.xcassets
+
+ExecuteExternalTool /Applications/Developer/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 18618a8c45505c73f133f7118506bb96
+Build description path: /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/XCBuildData/18618a8c45505c73f133f7118506bb96.xcbuilddata
+ClangStatCache /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk /Users/F3725413/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.5-22F76-cba7caa5157733b3104f4882ffca44a8.sdkstatcache
+    cd /Users/F3725413/Downloads/test-docking-system/test-docking-system.xcodeproj
+    /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -o /Users/F3725413/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.5-22F76-cba7caa5157733b3104f4882ffca44a8.sdkstatcache
+
+WriteAuxiliaryFile /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system.SwiftConstValuesFileList (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    write-file /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system.SwiftFileList (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    write-file /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system.SwiftFileList
+
+WriteAuxiliaryFile /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system.LinkFileList (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    write-file /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system.LinkFileList
+
+WriteAuxiliaryFile /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test-docking-system.SwiftFileList (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    write-file /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test-docking-system.SwiftFileList
+
+WriteAuxiliaryFile /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test-docking-system.SwiftConstValuesFileList (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    write-file /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test-docking-system.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test-docking-system.LinkFileList (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    write-file /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test-docking-system.LinkFileList
+
+ProcessProductPackaging "" /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system.app-Simulated.xcent (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "R8S6PK575X.za.co.RendX.test-docking-system";
+}
+    
+    builtin-productPackagingUtility -entitlements -format xml -o /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system.app-Simulated.xcent
+
+ProcessProductPackagingDER /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system.app-Simulated.xcent /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system.app-Simulated.xcent.der (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    /usr/bin/derq query -f xml -i /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system.app-Simulated.xcent -o /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system.app-Simulated.xcent.der --raw
+
+ProcessInfoPlistFile /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test-docking-system.app/Info.plist /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/empty-test-docking-system.plist (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    builtin-infoPlistUtility /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/empty-test-docking-system.plist -producttype com.apple.product-type.application -genpkginfo /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test-docking-system.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/assetcatalog_generated_info.plist -o /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test-docking-system.app/Info.plist
+
+SwiftDriver test-docking-system normal arm64 com.apple.xcode.tools.swift.compiler (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    builtin-SwiftDriver -- /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name test_docking_system -Onone -enforce-exclusivity\=checked @/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test-docking-system.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios18.5-simulator -g -module-cache-path /Users/F3725413/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Index.noindex/DataStore -swift-version 5 -I /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator -F /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.5-22F76-cba7caa5157733b3104f4882ffca44a8.sdkstatcache -output-file-map /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test-docking-system-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test_docking_system.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/F3725413/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test-docking-system_const_extract_protocols.json -Xcc -iquote -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-generated-files.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-own-target-headers.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-all-target-headers.hmap -Xcc -iquote -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-project-headers.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources-normal/arm64 -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources/arm64 -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/arm64/test_docking_system-Swift.h -working-directory /Users/F3725413/Downloads/test-docking-system -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver test-docking-system normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    builtin-SwiftDriver -- /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name test_docking_system -Onone -enforce-exclusivity\=checked @/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target x86_64-apple-ios18.5-simulator -g -module-cache-path /Users/F3725413/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Index.noindex/DataStore -swift-version 5 -I /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator -F /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.5-22F76-cba7caa5157733b3104f4882ffca44a8.sdkstatcache -output-file-map /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/F3725413/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system_const_extract_protocols.json -Xcc -iquote -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-generated-files.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-own-target-headers.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-all-target-headers.hmap -Xcc -iquote -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-project-headers.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources-normal/x86_64 -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources/x86_64 -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system-Swift.h -working-directory /Users/F3725413/Downloads/test-docking-system -experimental-emit-module-separately -disable-cmo
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ test_docking_system (in target 'test-docking-system' from project 'test-docking-system')
+
+EmitSwiftModule normal x86_64 (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+/Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPToolRegistry.swift:300:9: warning: stored property 'handler' of 'Sendable'-conforming struct 'DynamicTool' has non-sendable type '(ToolInvocation) async throws -> ToolResult'; this is an error in the Swift 6 language mode
+    let handler: (ToolInvocation) async throws -> ToolResult
+        ^
+/Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPToolRegistry.swift:300:9: note: a function type must be marked '@Sendable' to conform to 'Sendable'
+    let handler: (ToolInvocation) async throws -> ToolResult
+        ^
+/Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEProject.swift:46:48: warning: main actor-isolated static property 'shared' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+    private let contentStore = IDEContentStore.shared
+                                               ^
+/Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEContentStore.swift:11:23: note: static property declared here
+    public static let shared = IDEContentStore()
+                      ^
+
+SwiftCompile normal x86_64 Compiling\ BlueGrape.swift,\ View+Theme.swift,\ DockToolbarComponents.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/RetroMacOS9/BlueGrape.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Core/View+Theme.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/DockToolbarComponents.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/RetroMacOS9/BlueGrape.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Core/View+Theme.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/DockToolbarComponents.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 Compiling\ DefaultStyleClass.swift,\ DockPanel.swift,\ AgentChatView.swift,\ HTMLPreviewView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Default/DefaultStyleClass.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockPanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/UI/AgentChatView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/HTMLPreviewView.swift (in target 'test-docking-system' from project 'test-docking-system')
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Default/DefaultStyleClass.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockPanel.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/UI/AgentChatView.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/HTMLPreviewView.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 Compiling\ DockSplitView.swift,\ DockLayoutPersistence.swift,\ MCPSettingsView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockSplitView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockLayoutPersistence.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/UI/MCPSettingsView.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockSplitView.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockLayoutPersistence.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/UI/MCPSettingsView.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 Compiling\ DemoContentViews.swift,\ DockState.swift,\ IDEContentStore.swift,\ DockContainer.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/DemoContentViews.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockState.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEContentStore.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockContainer.swift (in target 'test-docking-system' from project 'test-docking-system')
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/DemoContentViews.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockState.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEContentStore.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockContainer.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 Compiling\ IDEFileSystemManager.swift,\ IDEFileWatcher.swift,\ DockContainer+Layout.swift,\ FileTools.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEFileSystemManager.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEFileWatcher.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockContainer+Layout.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Tools/FileTools.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEFileSystemManager.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEFileWatcher.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockContainer+Layout.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Tools/FileTools.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 Compiling\ MonacoEditorView.swift,\ AudioService.swift,\ IDEEditorRegistry.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/MonacoEditorView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Services/AudioService.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Editors/IDEEditorRegistry.swift (in target 'test-docking-system' from project 'test-docking-system')
+Failed frontend command:
+/Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEFileSystemManager.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPLogger.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockDragDropManager.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEFileWatcher.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Panels/IDEProjectExplorerPanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockContainer+Layout.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Tools/FileTools.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/IDEDemoView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Panels/IDEEditorPanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockRegionView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Core/DockThemeTypes.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/ContentPanelRegistry.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/AgentIDEBridge.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Agent/MCPAgent.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDELayoutProfile.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockContainer+Drag.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/IDEAppView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Default/DefaultStyleClass.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Services/ChatService.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Core/ThemePresets.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockPanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/IDEMainView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/UI/AgentChatView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/FloatingPanelView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockTypes.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/HTMLPreviewView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Default/DefaultDockTheme.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEWorkspace.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Default/Midnight.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEFileType.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Components/AgentDiffView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Default/Daylight.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/test_docking_systemApp.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockLayout.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Core/ThemeRegistry.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/DemoContentViews.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockState.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEContentStore.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/ContentView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockContainer.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Panels/IDEPreviewPanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Default/ProfessionalStyleClass.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPToolRegistry.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/AlternativeDemoViews.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/DemoSelectorView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/RetroMacOS9/RetroMaxOS9StyleClass.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockSplitView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockLayoutPersistence.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Services/ImageService.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/UI/MCPSettingsView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/RetroMacOS9/ClassicPlatinum.swift -primary-file /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/MonacoEditorView.swift -primary-file /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Services/AudioService.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockResizeHandle.swift -primary-file /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Editors/IDEEditorRegistry.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/RetroMacOS9/BlueGrape.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Tools/CodeTools.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Core/DockExtensions.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Core/DockThemeCore.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Core/View+Theme.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/DockToolbarComponents.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/ContentPanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPIntegration.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPTypes.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Panels/IDEConsolePanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/DockingSystem.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEProject.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/UI/ToolsPanelView.swift /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources/GeneratedAssetSymbols.swift -supplementary-output-file-map /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/supplementaryOutputs-8 -emit-localized-strings -emit-localized-strings-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64 -target x86_64-apple-ios18.5-simulator -enable-objc-interop -sdk /Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -I /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator -F /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator -no-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /Users/F3725413/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -swift-version 5 -enforce-exclusivity\=checked -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system_const_extract_protocols.json -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/F3725413/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/F3725413/Downloads/test-docking-system -resource-dir /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift -enable-anonymous-context-mangled-names -file-compilation-dir /Users/F3725413/Downloads/test-docking-system -Xcc -ivfsstatcache -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.5-22F76-cba7caa5157733b3104f4882ffca44a8.sdkstatcache -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-generated-files.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-own-target-headers.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-all-target-headers.hmap -Xcc -iquote -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-project-headers.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources-normal/x86_64 -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources/x86_64 -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources -Xcc -DDEBUG\=1 -module-name test_docking_system -frontend-parseable-output -disable-clang-spi -target-sdk-version 18.5 -target-sdk-name iphonesimulator18.5 -external-plugin-path /Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins\#/Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server -external-plugin-path /Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/local/lib/swift/host/plugins\#/Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server -in-process-plugin-server-path /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -plugin-path /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins -plugin-path /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/lib/swift/host/plugins -o /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/MonacoEditorView.o -o /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/AudioService.o -o /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/IDEEditorRegistry.o -index-unit-output-path /test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/MonacoEditorView.o -index-unit-output-path /test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/AudioService.o -index-unit-output-path /test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/IDEEditorRegistry.o -index-store-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Index.noindex/DataStore -index-system-modules
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/MonacoEditorView.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+/Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/MonacoEditorView.swift:275:88: error: cannot force unwrap value of non-optional type 'String'
+            let shouldUpdateComparison = comparisonToApply != nil && comparisonToApply!! != lastAppliedComparison
+                                                                     ~~~~~~~~~~~~~~~~~~^
+                                                                                       
+/Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Components/MonacoEditorView.swift:294:58: error: cannot force unwrap value of non-optional type 'String'
+                let comparisonString = comparisonToApply!!
+                                       ~~~~~~~~~~~~~~~~~~^
+                                                         
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Services/AudioService.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Editors/IDEEditorRegistry.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 Compiling\ DockThemeTypes.swift,\ ContentPanelRegistry.swift,\ DockContainer+Drag.swift,\ IDEAppView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Core/DockThemeTypes.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/ContentPanelRegistry.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockContainer+Drag.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/IDEAppView.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Core/DockThemeTypes.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/ContentPanelRegistry.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockContainer+Drag.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/IDEAppView.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+/Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/IDEAppView.swift:678:13: warning: variable 'layout' was never mutated; consider changing to 'let' constant
+        var layout = DockLayout()
+        ~~~ ^
+        let
+
+SwiftCompile normal x86_64 Compiling\ MCPTypes.swift,\ IDEProject.swift,\ ToolsPanelView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPTypes.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEProject.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/UI/ToolsPanelView.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPTypes.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEProject.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+/Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEProject.swift:46:48: warning: main actor-isolated static property 'shared' can not be referenced from a nonisolated context; this is an error in the Swift 6 language mode
+    private let contentStore = IDEContentStore.shared
+                                               ^
+/Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/IDEContentStore.swift:11:23: note: static property declared here
+    public static let shared = IDEContentStore()
+                      ^
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/UI/ToolsPanelView.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 Compiling\ IDEPreviewPanel.swift,\ ProfessionalStyleClass.swift,\ AlternativeDemoViews.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Panels/IDEPreviewPanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Default/ProfessionalStyleClass.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/AlternativeDemoViews.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Panels/IDEPreviewPanel.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/Default/ProfessionalStyleClass.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/AlternativeDemoViews.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ test_docking_system (in target 'test-docking-system' from project 'test-docking-system')
+
+EmitSwiftModule normal arm64 (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftDriverJobDiscovery normal x86_64 Compiling BlueGrape.swift, View+Theme.swift, DockToolbarComponents.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 Compiling\ RetroMaxOS9StyleClass.swift,\ ImageService.swift,\ ClassicPlatinum.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/RetroMacOS9/RetroMaxOS9StyleClass.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Services/ImageService.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/RetroMacOS9/ClassicPlatinum.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/RetroMacOS9/RetroMaxOS9StyleClass.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Services/ImageService.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Themes/RetroMacOS9/ClassicPlatinum.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftDriverJobDiscovery normal x86_64 Compiling DockSplitView.swift, DockLayoutPersistence.swift, MCPSettingsView.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 Compiling\ DockDragDropManager.swift,\ IDEProjectExplorerPanel.swift,\ IDEDemoView.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockDragDropManager.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Panels/IDEProjectExplorerPanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/IDEDemoView.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/DockingSystem/Scaffolds/Layout/DockDragDropManager.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Panels/IDEProjectExplorerPanel.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/Demo/IDEDemoView.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftDriverJobDiscovery normal x86_64 Compiling IDEFileSystemManager.swift, IDEFileWatcher.swift, DockContainer+Layout.swift, FileTools.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 Compiling\ MCPIntegration.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPIntegration.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 /Users/F3725413/Downloads/test-docking-system/test-docking-system/MCP/Core/MCPIntegration.swift (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    
+
+SwiftDriverJobDiscovery normal x86_64 Emitting module for test_docking_system (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftDriver\ Compilation\ Requirements test-docking-system normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    builtin-Swift-Compilation-Requirements -- /Applications/Developer/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name test_docking_system -Onone -enforce-exclusivity\=checked @/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Developer/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target x86_64-apple-ios18.5-simulator -g -module-cache-path /Users/F3725413/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Index.noindex/DataStore -swift-version 5 -I /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator -F /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.5-22F76-cba7caa5157733b3104f4882ffca44a8.sdkstatcache -output-file-map /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/F3725413/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test-docking-system_const_extract_protocols.json -Xcc -iquote -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-generated-files.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-own-target-headers.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-all-target-headers.hmap -Xcc -iquote -Xcc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/test-docking-system-project-headers.hmap -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources-normal/x86_64 -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources/x86_64 -Xcc -I/Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system-Swift.h -working-directory /Users/F3725413/Downloads/test-docking-system -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal x86_64 Compiling DockThemeTypes.swift, ContentPanelRegistry.swift, DockContainer+Drag.swift, IDEAppView.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+SwiftCompile normal x86_64 Compiling\ ContentPanel.swift,\ IDEConsolePanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Core/ContentPanel.swift /Users/F3725413/Downloads/test-docking-system/test-docking-system/IDE/Panels/IDEConsolePanel.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+Copy /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test_docking_system.swiftmodule/x86_64-apple-ios-simulator.swiftmodule /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.swiftmodule (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.swiftmodule /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test_docking_system.swiftmodule/x86_64-apple-ios-simulator.swiftmodule
+
+SwiftDriverJobDiscovery normal x86_64 Compiling MCPTypes.swift, IDEProject.swift, ToolsPanelView.swift (in target 'test-docking-system' from project 'test-docking-system')
+
+Copy /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test_docking_system.swiftmodule/x86_64-apple-ios-simulator.swiftdoc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.swiftdoc (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.swiftdoc /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test_docking_system.swiftmodule/x86_64-apple-ios-simulator.swiftdoc
+
+Copy /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test_docking_system.swiftmodule/x86_64-apple-ios-simulator.abi.json /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.abi.json (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.abi.json /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test_docking_system.swiftmodule/x86_64-apple-ios-simulator.abi.json
+
+Copy /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test_docking_system.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.swiftsourceinfo (in target 'test-docking-system' from project 'test-docking-system')
+    cd /Users/F3725413/Downloads/test-docking-system
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Intermediates.noindex/test-docking-system.build/Debug-iphonesimulator/test-docking-system.build/Objects-normal/x86_64/test_docking_system.swiftsourceinfo /Users/F3725413/Library/Developer/Xcode/DerivedData/test-docking-system-ekuwxgcfrzlavxeloqavamknrifw/Build/Products/Debug-iphonesimulator/test_docking_system.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo
+

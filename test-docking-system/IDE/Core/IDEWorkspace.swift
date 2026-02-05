@@ -328,13 +328,15 @@ public class IDEState: ObservableObject {
     
     private func lifecycleHandlers(for document: IDEDocument, panelID: DockPanelID, project: IDEProject) -> [String: Any] {
         let onClose: () -> Void = { [weak self, weak project] in
-            guard let self else { return }
-            self.documentPanelMap.removeValue(forKey: document.id)
-            if !self.isClosingPanelsProgrammatically {
-                project?.closeDocument(document)
-            }
-            if self.selectedFileURL == document.fileURL {
-                self.selectedFileURL = project?.activeDocument?.fileURL
+            Task { @MainActor in
+                guard let self else { return }
+                self.documentPanelMap.removeValue(forKey: document.id)
+                if !self.isClosingPanelsProgrammatically {
+                    project?.closeDocument(document)
+                }
+                if self.selectedFileURL == document.fileURL {
+                    self.selectedFileURL = project?.activeDocument?.fileURL
+                }
             }
         }
         let onActivate: () -> Void = { [weak self, weak project] in
@@ -342,9 +344,14 @@ public class IDEState: ObservableObject {
             project?.activeDocument = document
             self.selectedFileURL = document.fileURL
         }
+        let isDirtyProvider: () -> Bool = { [weak document] in
+            document?.isDirty ?? false
+        }
         return [
             DockPanelUserInfoKey.onCloseHandler: onClose,
-            DockPanelUserInfoKey.onActivateHandler: onActivate
+            DockPanelUserInfoKey.onActivateHandler: onActivate,
+            DockPanelUserInfoKey.isDirtyProvider: isDirtyProvider,
+            DockPanelUserInfoKey.fileURL: document.fileURL
         ]
     }
 }
