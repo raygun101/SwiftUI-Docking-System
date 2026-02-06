@@ -10,6 +10,7 @@ public final class AgentIDEBridge: ObservableObject {
     public static let shared = AgentIDEBridge()
     
     private var cancellables = Set<AnyCancellable>()
+    private var projectDocumentCancellables = Set<AnyCancellable>()
     private weak var ideState: IDEState?
     
     private init() {
@@ -147,9 +148,6 @@ public final class AgentIDEBridge: ObservableObject {
             if let document, let oldContent, let newContent {
                 document.recordAgentChange(oldContent: oldContent, newContent: newContent)
             }
-            if let document {
-                await document.reloadFromDisk(force: true)
-            }
             await project.refreshFileTree()
             updateMCPContext()
         }
@@ -217,19 +215,28 @@ public final class AgentIDEBridge: ObservableObject {
     // MARK: - Context Management
     
     private func observeDocumentChanges() {
-        // Observe when documents open/close
-        ideState?.workspaceManager.project?.$openDocuments
-            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateMCPContext()
-            }
-            .store(in: &cancellables)
+        guard let ideState else { return }
         
-        // Observe active document changes
-        ideState?.workspaceManager.project?.$activeDocument
-            .debounce(for: .milliseconds(200), scheduler: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateMCPContext()
+        ideState.workspaceManager.$project
+            .receive(on: RunLoop.main)
+            .sink { [weak self] project in
+                guard let self else { return }
+                self.projectDocumentCancellables.removeAll()
+                guard let project else { return }
+                
+                project.$openDocuments
+                    .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+                    .sink { [weak self] _ in
+                        self?.updateMCPContext()
+                    }
+                    .store(in: &self.projectDocumentCancellables)
+                
+                project.$activeDocument
+                    .debounce(for: .milliseconds(200), scheduler: RunLoop.main)
+                    .sink { [weak self] _ in
+                        self?.updateMCPContext()
+                    }
+                    .store(in: &self.projectDocumentCancellables)
             }
             .store(in: &cancellables)
     }

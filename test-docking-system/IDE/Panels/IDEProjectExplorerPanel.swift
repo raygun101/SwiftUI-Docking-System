@@ -206,10 +206,7 @@ public struct IDEProjectExplorerPanel: View {
     private func handlePreviewSelection(_ node: IDEFileNode) {
         guard !node.isDirectory else { return }
         Task {
-            await ideState.openFile(node.url)
-            await MainActor.run {
-                ideState.previewURL = node.url
-            }
+            await ideState.openFile(node.url, using: ContentPanelDescriptor.htmlPreview)
         }
     }
     
@@ -222,9 +219,7 @@ public struct IDEProjectExplorerPanel: View {
     private func handleOpenAs(_ node: IDEFileNode, descriptor: ContentPanelDescriptor) {
         guard !node.isDirectory else { return }
         Task {
-            await ideState.openFile(node.url)
-            // TODO: Open with specific panel descriptor
-            // For now, just open the file - panel switching will be handled in future iteration
+            await ideState.openFile(node.url, using: descriptor)
         }
     }
     
@@ -279,9 +274,34 @@ struct FileNodeRow: View {
     
     @Environment(\.dockTheme) var theme
     @State private var isHovered: Bool = false
-    @State private var dirtyState: Bool = false
+    @StateObject private var dirtyObserver: FileDirtyObserver
     
     private let contentStore = IDEContentStore.shared
+    
+    init(
+        node: IDEFileNode,
+        depth: Int,
+        searchText: String,
+        selectedURL: URL?,
+        onSelect: @escaping (IDEFileNode) -> Void,
+        onToggle: @escaping (IDEFileNode) -> Void,
+        onPreview: @escaping (IDEFileNode) -> Void,
+        onOpenAs: ((IDEFileNode, ContentPanelDescriptor) -> Void)? = nil,
+        onSave: ((IDEFileNode) -> Void)? = nil,
+        onRevert: ((IDEFileNode) -> Void)? = nil
+    ) {
+        self._node = ObservedObject(initialValue: node)
+        self.depth = depth
+        self.searchText = searchText
+        self.selectedURL = selectedURL
+        self.onSelect = onSelect
+        self.onToggle = onToggle
+        self.onPreview = onPreview
+        self.onOpenAs = onOpenAs
+        self.onSave = onSave
+        self.onRevert = onRevert
+        _dirtyObserver = StateObject(wrappedValue: FileDirtyObserver(url: node.url, isDirectory: node.isDirectory))
+    }
     
     private func availablePanels(for node: IDEFileNode) -> [ContentPanelDescriptor] {
         ContentPanelRegistry.shared.availablePanels(for: node.fileType)
@@ -289,26 +309,6 @@ struct FileNodeRow: View {
     
     private func hasBuffer(for node: IDEFileNode) -> Bool {
         contentStore.hasBuffer(for: node.url)
-    }
-    
-    private func isBufferDirty(for node: IDEFileNode) -> Bool {
-        contentStore.buffer(for: node.url)?.isDirty ?? false
-    }
-    
-    private var dirtyPublisher: AnyPublisher<Bool, Never>? {
-        guard !node.isDirectory else { return nil }
-        return NotificationCenter.default.publisher(for: .contentBufferDirtyStateChanged)
-            .compactMap { notification -> Bool? in
-                guard let changedURL = notification.userInfo?["url"] as? URL,
-                      let isDirty = notification.userInfo?["isDirty"] as? Bool,
-                      changedURL == node.url else {
-                    return nil
-                }
-                return isDirty
-            }
-            .debounce(for: .milliseconds(150), scheduler: RunLoop.main)
-            .removeDuplicates()
-            .eraseToAnyPublisher()
     }
     
     var body: some View {
@@ -352,7 +352,7 @@ struct FileNodeRow: View {
                         .lineLimit(1)
                     
                     // Dirty indicator
-                    if !node.isDirectory && dirtyState {
+                    if !node.isDirectory && dirtyObserver.isDirty {
                         Circle()
                             .fill(theme.colors.accent)
                             .frame(width: 6, height: 6)
@@ -400,7 +400,7 @@ struct FileNodeRow: View {
                     
                     // Save/Revert actions (only if file has a buffer)
                     if hasBuffer(for: node) {
-                        if dirtyState {
+                        if dirtyObserver.isDirty {
                             Button("Save", action: { onSave?(node) })
                             Button("Revert", action: { onRevert?(node) })
                         } else {
@@ -428,12 +428,6 @@ struct FileNodeRow: View {
                     )
                 }
             }
-        }
-        .onAppear {
-            dirtyState = isBufferDirty(for: node)
-        }
-        .onReceive(dirtyPublisher ?? Empty<Bool, Never>().eraseToAnyPublisher()) { isDirty in
-            dirtyState = isDirty
         }
     }
 }
@@ -476,5 +470,35 @@ private extension FileNodeRow {
         }
 
         return composed
+    }
+}
+
+// MARK: - Dirty State Observer
+
+@MainActor
+private final class FileDirtyObserver: ObservableObject {
+    @Published var isDirty: Bool = false
+    private var cancellable: AnyCancellable?
+    
+    init(url: URL, isDirectory: Bool, contentStore: IDEContentStore = .shared) {
+        guard !isDirectory else { return }
+        isDirty = contentStore.buffer(for: url)?.isDirty ?? false
+        cancellable = NotificationCenter.default.publisher(for: .contentBufferDirtyStateChanged)
+            .compactMap { notification -> Bool? in
+                guard let changedURL = notification.userInfo?["url"] as? URL,
+                      let isDirty = notification.userInfo?["isDirty"] as? Bool,
+                      changedURL == url else {
+                    return nil
+                }
+                return isDirty
+            }
+            .receive(on: RunLoop.main)
+            .sink { [weak self] newValue in
+                self?.isDirty = newValue
+            }
+    }
+    
+    deinit {
+        cancellable?.cancel()
     }
 }

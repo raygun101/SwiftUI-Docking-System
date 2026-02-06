@@ -19,6 +19,7 @@ fileprivate struct AgentChatStyle {
     let chipBackground: Color
     let chipForeground: Color
     let shadow: Color
+    let error: Color
     
     static var fallback: AgentChatStyle {
         AgentChatStyle(
@@ -36,7 +37,8 @@ fileprivate struct AgentChatStyle {
             assistantAvatarBackground: Color.purple.opacity(0.85),
             chipBackground: Color.purple.opacity(0.12),
             chipForeground: Color.purple,
-            shadow: Color.black.opacity(0.35)
+            shadow: Color.black.opacity(0.35),
+            error: Color.red.opacity(0.9)
         )
     }
     
@@ -58,7 +60,8 @@ fileprivate struct AgentChatStyle {
             assistantAvatarBackground: colors.accentSecondary,
             chipBackground: accent.opacity(0.12),
             chipForeground: accent,
-            shadow: colors.shadowColor.opacity(0.4)
+            shadow: colors.shadowColor.opacity(0.4),
+            error: colors.accentSecondary
         )
     }
 }
@@ -280,12 +283,13 @@ public struct AgentChatView: View {
                         StreamingBubble(content: agent.streamingContent)
                     }
                     
-                    if agent.isThinking {
-                        ThinkingIndicator(thought: agent.currentThought)
-                    }
-                    
-                    if !agent.pendingToolCalls.isEmpty {
-                        ToolCallsView(calls: agent.pendingToolCalls)
+                    if agent.isProcessing || !agent.pendingToolCalls.isEmpty {
+                        AgentProgressView(
+                            isProcessing: agent.isProcessing,
+                            isThinking: agent.isThinking,
+                            currentThought: agent.currentThought,
+                            toolCalls: agent.pendingToolCalls
+                        )
                     }
                 }
                 .padding(.vertical, 4)
@@ -544,94 +548,158 @@ struct StreamingBubble: View {
     }
 }
 
-// MARK: - Thinking Indicator
+// MARK: - Agent Progress View
 
-struct ThinkingIndicator: View {
-    let thought: String
+struct AgentProgressView: View {
+    let isProcessing: Bool
+    let isThinking: Bool
+    let currentThought: String
+    let toolCalls: [ToolCall]
     
-    @State private var dotCount = 0
-    let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
     @Environment(\.agentChatStyle) private var style
+    @State private var phase: CGFloat = 0
+    let timer = Timer.publish(every: 0.4, on: .main, in: .common).autoconnect()
+    
+    private var progressStep: Double {
+        guard isProcessing else { return 1 }
+        let completed = toolCalls.filter { $0.status == .completed }.count
+        let total = max(toolCalls.count, 1)
+        return Double(completed) / Double(total) + (toolCalls.isEmpty ? 0.15 : 0.0)
+    }
     
     var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(style.accentSoft)
-                .frame(width: 28, height: 28)
-                .overlay {
-                    Image(systemName: "brain")
-                        .font(.caption)
-                        .foregroundColor(style.accent)
-                }
-            
-            HStack(spacing: 4) {
-                Text(thought.isEmpty ? "Thinking" : thought)
-                    .font(.caption)
-                    .foregroundColor(style.textSecondary)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                ProgressCircle(progress: progressStep)
+                    .frame(width: 36, height: 36)
+                    .foregroundColor(style.accent)
+                    .animation(.easeInOut(duration: 0.4), value: progressStep)
                 
-                Text(String(repeating: ".", count: dotCount + 1))
-                    .font(.caption)
-                    .foregroundColor(style.textSecondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(statusTitle)
+                        .font(.footnote)
+                        .fontWeight(.semibold)
+                        .foregroundColor(style.textPrimary)
+                    
+                    if isThinking {
+                        Text(currentThought.isEmpty ? "Thinking" : currentThought)
+                            .font(.caption)
+                            .foregroundColor(style.textSecondary)
+                            .lineLimit(2)
+                    } else if let running = toolCalls.first(where: { $0.status == .running }) {
+                        Text("Running \(running.toolID)...")
+                            .font(.caption)
+                            .foregroundColor(style.textSecondary)
+                    }
+                }
+                
+                Spacer()
+                
+                if isProcessing {
+                    HStack(spacing: 4) {
+                        ForEach(0..<3) { index in
+                            Circle()
+                                .fill(style.accent)
+                                .frame(width: 4, height: 4)
+                                .opacity(dotOpacity(for: index))
+                        }
+                    }
+                    .onReceive(timer) { _ in
+                        phase = (phase + 1).truncatingRemainder(dividingBy: 3)
+                    }
+                }
             }
-            .padding(8)
+            .padding(12)
             .background(style.surface)
-            .cornerRadius(8)
+            .cornerRadius(12)
             
-            Spacer()
+            if !toolCalls.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(toolCalls) { call in
+                        ToolCallProgressRow(call: call)
+                    }
+                }
+            }
         }
-        .onReceive(timer) { _ in
-            dotCount = (dotCount + 1) % 3
+    }
+    
+    private var statusTitle: String {
+        if !toolCalls.isEmpty {
+            let completed = toolCalls.filter { $0.status == .completed }.count
+            return "Executing \(toolCalls.count) tasks (\(completed)/\(toolCalls.count))"
+        }
+        if isThinking { return "Thinking" }
+        return "Working"
+    }
+    
+    private func dotOpacity(for index: Int) -> Double {
+        Double(index) == Double(Int(phase)) ? 1 : 0.3
+    }
+}
+
+private struct ProgressCircle: View {
+    let progress: Double
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.white.opacity(0.15), lineWidth: 4)
+            Circle()
+                .trim(from: 0, to: min(progress, 1))
+                .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .rotationEffect(.degrees(-90))
         }
     }
 }
 
-// MARK: - Tool Calls View
-
-struct ToolCallsView: View {
-    let calls: [ToolCall]
+private struct ToolCallProgressRow: View {
+    let call: ToolCall
     @Environment(\.agentChatStyle) private var style
     
     var body: some View {
-        VStack(spacing: 8) {
-            ForEach(calls) { call in
-                HStack {
-                    Image(systemName: statusIcon(for: call.status))
-                        .foregroundColor(statusColor(for: call.status))
-                    
-                    Text(call.toolID)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(style.textPrimary)
-                    
-                    Spacer()
-                    
-                    if call.status == .running {
-                        ProgressView()
-                            .scaleEffect(0.6)
-                    }
+        HStack(spacing: 10) {
+            Image(systemName: statusIcon)
+                .foregroundColor(statusColor)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(call.toolID)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(style.textPrimary)
+                if let result = call.result, case .error(let error) = result {
+                    Text(error.message)
+                        .font(.caption2)
+                        .foregroundColor(style.error)
                 }
-                .padding(10)
-                .background(style.surface)
-                .cornerRadius(8)
+            }
+            
+            Spacer()
+            
+            if call.status == .running {
+                ProgressView()
+                    .scaleEffect(0.7)
             }
         }
+        .padding(10)
+        .background(style.surface.opacity(0.6))
+        .cornerRadius(8)
     }
     
-    private func statusIcon(for status: ToolCall.Status) -> String {
-        switch status {
+    private var statusIcon: String {
+        switch call.status {
         case .pending: return "clock"
-        case .running: return "gearshape.2"
+        case .running: return "gearshape"
         case .completed: return "checkmark.circle"
-        case .failed: return "xmark.circle"
+        case .failed: return "exclamationmark.triangle"
         }
     }
     
-    private func statusColor(for status: ToolCall.Status) -> Color {
-        switch status {
+    private var statusColor: Color {
+        switch call.status {
         case .pending: return .gray
         case .running: return .orange
         case .completed: return .green
-        case .failed: return .red
+        case .failed: return style.accent
         }
     }
 }

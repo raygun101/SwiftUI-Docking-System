@@ -115,15 +115,14 @@ public struct IDEMainView: View {
         ], position: .left)
         dockState.layout.leftNode = .panel(explorerGroup)
         
-        // Update right panel with preview
         dockState.layout.rightNode = .panel(DockPanelGroup(panels: [
             DockPanel(
-                id: "preview",
-                title: "Preview",
-                icon: "eye",
+                id: "agent-main",
+                title: "AI Assistant",
+                icon: "sparkles",
                 position: .right
             ) {
-                IDEPreviewPanel(project: project)
+                AgentChatView()
                     .environmentObject(ideState)
             }
         ], position: .right))

@@ -168,14 +168,15 @@ struct DockPanelGroupView: View {
                 .help("Pop out panel")
             }
             
-            Button(action: { state.onRequestNewPanel?(position) }) {
-                Image(systemName: "plus")
-                    .font(.system(size: theme.typography.iconSize - 2))
+            if state.onRequestNewPanel != nil {
+                Button(action: { state.onRequestNewPanel?(position) }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: theme.typography.iconSize - 2))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(theme.colors.secondaryText)
+                .help("Add panel")
             }
-            .buttonStyle(.plain)
-            .foregroundColor(theme.colors.secondaryText)
-            .disabled(state.onRequestNewPanel == nil)
-            .help("Add panel")
         }
         .padding(.leading, 8)
     }
@@ -416,14 +417,14 @@ private struct PanelContainerView: View {
     
     @EnvironmentObject var state: DockState
     @Environment(\.dockTheme) var theme
-    @State private var toolbar: AnyView?
+    @State private var toolbarProvider: (() -> AnyView)?
     
     var body: some View {
         VStack(spacing: 0) {
-            DockPanelHeader(panel: panel, position: position, toolbar: toolbar)
+            DockPanelHeader(panel: panel, position: position, toolbar: toolbarProvider?())
             
             panel.content()
-                .modifier(PanelToolbarCapture(toolbar: $toolbar))
+                .modifier(PanelToolbarCapture(toolbarProvider: $toolbarProvider))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
         }
@@ -439,23 +440,28 @@ private struct PanelContainerView: View {
 private struct PanelToolbarPreferenceKey: PreferenceKey {
     static var defaultValue: PanelToolbarContainer? = nil
     static func reduce(value: inout PanelToolbarContainer?, nextValue: () -> PanelToolbarContainer?) {
-        value = nextValue() ?? value
+        guard let next = nextValue() else { return }
+        if value?.id != next.id {
+            value = next
+        }
     }
 }
 
 private struct PanelToolbarContainer: Equatable {
-    let id = UUID()
-    let view: AnyView
-    static func == (lhs: PanelToolbarContainer, rhs: PanelToolbarContainer) -> Bool { lhs.id == rhs.id }
+    let id: UUID
+    let builder: () -> AnyView
+    static func == (lhs: PanelToolbarContainer, rhs: PanelToolbarContainer) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 private struct PanelToolbarCapture: ViewModifier {
-    @Binding var toolbar: AnyView?
+    @Binding var toolbarProvider: (() -> AnyView)?
     
     func body(content: Content) -> some View {
         content
             .onPreferenceChange(PanelToolbarPreferenceKey.self) { newValue in
-                toolbar = newValue?.view
+                toolbarProvider = newValue?.builder
             }
     }
 }
@@ -463,6 +469,7 @@ private struct PanelToolbarCapture: ViewModifier {
 /// Declare a toolbar for the enclosing dock panel. The content is rendered in the panel header instead of inside the panel body.
 public struct DockPanelToolbar<Content: View>: View {
     private let content: () -> Content
+    @State private var toolbarID = UUID()
     
     public init(@ViewBuilder content: @escaping () -> Content) {
         self.content = content
@@ -473,7 +480,7 @@ public struct DockPanelToolbar<Content: View>: View {
             .frame(width: 0, height: 0)
             .preference(
                 key: PanelToolbarPreferenceKey.self,
-                value: PanelToolbarContainer(view: AnyView(content()))
+                value: PanelToolbarContainer(id: toolbarID) { AnyView(content()) }
             )
     }
 }

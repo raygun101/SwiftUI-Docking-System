@@ -322,12 +322,6 @@ public struct IDEAppView: View {
         let theme = themeManager.currentTheme
         
         return Menu {
-            Section("Editors") {
-                Button(action: { addFloatingPanel(type: .htmlPreview) }) {
-                    Label("HTML Preview", systemImage: "globe")
-                }
-            }
-            Divider()
             Section("Panels") {
                 Button(action: { addFloatingPanel(type: .fileExplorer) }) {
                     Label("File Explorer", systemImage: "folder")
@@ -406,15 +400,8 @@ public struct IDEAppView: View {
         ], position: .left)
         dockState.layout.leftNode = .panel(explorerGroup)
         
-        // Right: Preview + Agent
+        // Right: Agent
         dockState.layout.rightNode = .panel(DockPanelGroup(panels: [
-            DockPanel(
-                id: "preview-main",
-                title: "Preview",
-                icon: "eye",
-                position: .right,
-                visibility: .standard
-            ) { IDEPreviewPanel(project: project).environmentObject(ideState) },
             DockPanel(
                 id: "agent-main",
                 title: "AI Assistant",
@@ -503,16 +490,9 @@ public struct IDEAppView: View {
     private func configureDockCallbacksIfNeeded() {
         guard !didConfigureDockCallbacks else { return }
         didConfigureDockCallbacks = true
-        dockState.onRequestNewPanel = { [weak ideState = ideState, dockState] position in
-            guard
-                let ideState,
-                let project = ideState.workspaceManager.project,
-                let panel = IDEAppView.makePanel(for: position, project: project, ideState: ideState)
-            else { return }
-            dockState.addPanel(panel, to: position)
-        }
+        dockState.onRequestNewPanel = nil
     }
-    
+
     private static func makePanel(for position: DockPosition, project: IDEProject, ideState: IDEState) -> DockPanel? {
         switch position {
         case .left:
@@ -527,16 +507,7 @@ public struct IDEAppView: View {
                     .environmentObject(ideState)
             }
         case .right:
-            return DockPanel(
-                id: "preview-\(UUID().uuidString.prefix(4))",
-                title: "Preview",
-                icon: "eye",
-                position: .right,
-                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
-            ) {
-                IDEPreviewPanel(project: project)
-                    .environmentObject(ideState)
-            }
+            return nil
         case .bottom:
             return DockPanel(
                 id: "console-\(UUID().uuidString.prefix(4))",
@@ -588,18 +559,6 @@ public struct IDEAppView: View {
         let panel: DockPanel
         
         switch type {
-        case .htmlPreview:
-            panel = DockPanel(
-                id: "preview-\(UUID().uuidString.prefix(4))",
-                title: "HTML Preview",
-                icon: "globe",
-                position: .center,
-                visibility: [.showHeader, .showCloseButton, .allowDrag, .allowTabbing, .allowFloat]
-            ) {
-                IDEPreviewPanel(project: project)
-                    .environmentObject(ideState)
-            }
-            
         case .fileExplorer:
             panel = DockPanel(
                 id: "explorer-\(UUID().uuidString.prefix(4))",
@@ -686,7 +645,6 @@ public struct IDEAppView: View {
 // MARK: - IDE Panel Type
 
 enum IDEPanelType {
-    case htmlPreview
     case fileExplorer
     case console
     case search

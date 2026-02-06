@@ -4,9 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Web App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="ai-background" aria-hidden="true">
+        <div class="ai-gradient"></div>
+        <div class="ai-gradient gradient-2"></div>
+        <div class="ai-grid"></div>
+        <div class="ai-glow"></div>
+        <div class="ai-particles">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
     <header class="header">
         <nav class="nav">
             <div class="logo">
@@ -25,14 +48,26 @@
     <main>
         <section id="home" class="hero">
             <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="pulse-dot"></span>
+                    Realtime AI design playground
+                </div>
                 <h1>Welcome to WebApp</h1>
                 <p class="hero-subtitle">Build amazing things with modern web technologies</p>
-                <button class="btn btn-primary" onclick="showMessage()">Get Started</button>
+                <div class="hero-actions">
+                    <button class="btn btn-primary" onclick="showMessage()">Get Started</button>
+                    <button class="btn btn-ghost">View Showcase</button>
+                </div>
+                <div class="hero-terminal">
+                    <span class="prompt">mcp@demo</span>
+                    <span class="cursor">Generating immersive UI...</span>
+                </div>
             </div>
             <div class="hero-image">
                 <div class="floating-card">
                     <div class="card-icon">✨</div>
                     <div class="card-text">Interactive Demo</div>
+                    <p class="card-meta">Adaptive layouts • Live previews • AI copilot</p>
                 </div>
             </div>
         </section>

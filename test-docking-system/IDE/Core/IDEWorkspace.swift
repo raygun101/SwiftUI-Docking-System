@@ -137,11 +137,10 @@ public class IDEState: ObservableObject {
     
     // Editor state
     @Published public var selectedFileURL: URL?
-    @Published public var previewURL: URL?
     @Published public var preferredEditorPosition: DockPosition = .center
     
     private weak var dockState: DockState?
-    private var documentPanelMap: [UUID: DockPanelID] = [:]
+    private var documentPanelMap: [UUID: [DockPanelID: ContentPanelDescriptor]] = [:]
     private var openDocumentsCancellable: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
     private var isClosingPanelsProgrammatically = false
@@ -187,18 +186,22 @@ public class IDEState: ObservableObject {
     @MainActor
     private func syncPanels(with documents: [IDEDocument]) {
         guard let dockState else { return }
-        for document in documents where documentPanelMap[document.id] == nil {
-            presentPanel(for: document)
-        }
         let currentIDs = Set(documents.map { $0.id })
+        for document in documents {
+            if documentPanelMap[document.id] == nil {
+                documentPanelMap[document.id] = [:]
+            }
+        }
         let knownIDs = Set(documentPanelMap.keys)
         let removed = knownIDs.subtracting(currentIDs)
         for documentID in removed {
-            guard let panelID = documentPanelMap[documentID] else { continue }
-            if let panel = dockState.panel(withID: panelID) {
-                isClosingPanelsProgrammatically = true
-                dockState.closePanel(panel)
-                isClosingPanelsProgrammatically = false
+            guard let panelEntries = documentPanelMap[documentID] else { continue }
+            for panelID in panelEntries.keys {
+                if let panel = dockState.panel(withID: panelID) {
+                    isClosingPanelsProgrammatically = true
+                    dockState.closePanel(panel)
+                    isClosingPanelsProgrammatically = false
+                }
             }
             documentPanelMap.removeValue(forKey: documentID)
         }
@@ -207,11 +210,14 @@ public class IDEState: ObservableObject {
     private func closeAllDocumentPanels() {
         guard let dockState else { return }
         isClosingPanelsProgrammatically = true
-        for panelID in documentPanelMap.values {
-            if let panel = dockState.panel(withID: panelID) {
-                dockState.closePanel(panel)
+        for panelEntries in documentPanelMap.values {
+            for panelID in panelEntries.keys {
+                if let panel = dockState.panel(withID: panelID) {
+                    dockState.closePanel(panel)
+                }
             }
         }
+        documentPanelMap.removeAll()
         isClosingPanelsProgrammatically = false
     }
     
@@ -231,7 +237,7 @@ public class IDEState: ObservableObject {
         }
     }
     
-    public func openFile(_ url: URL) async {
+    public func openFile(_ url: URL, using descriptor: ContentPanelDescriptor? = nil) async {
         guard let project = workspaceManager.project else { return }
         
         await MainActor.run {
@@ -242,12 +248,7 @@ public class IDEState: ObservableObject {
             await MainActor.run {
                 selectedFileURL = url
                 statusMessage = "Opened \(document.name)"
-                
-                // Auto-set preview for HTML files
-                if document.fileType.canPreview && document.fileType.id == "html" {
-                    previewURL = url
-                }
-                presentPanel(for: document)
+                presentPanel(for: document, using: descriptor)
             }
         }
     }
@@ -298,30 +299,33 @@ public class IDEState: ObservableObject {
     // MARK: - Document Panels
     
     @MainActor
-    private func presentPanel(for document: IDEDocument) {
+    public func presentPanel(for document: IDEDocument, using descriptor: ContentPanelDescriptor? = nil, preferredPosition: DockPosition? = nil) {
         guard let dockState, let project = workspaceManager.project else { return }
-        if let panelID = documentPanelMap[document.id],
-           let existingPanel = dockState.panel(withID: panelID) {
-            dockState.activatePanel(existingPanel)
+        let descriptor = descriptor ?? ContentPanelRegistry.shared.defaultPanel(for: document.fileType)
+        let existingPanelID = documentPanelMap[document.id]?.first(where: { $0.value == descriptor })?.key
+        if let panelID = existingPanelID,
+           let panel = dockState.panel(withID: panelID) {
+            dockState.activatePanel(panel)
             return
         }
-        let panel = createPanel(for: document, in: project)
-        documentPanelMap[document.id] = panel.id
-        dockState.addPanel(panel, to: preferredEditorPosition)
+        let panel = createPanel(for: document, descriptor: descriptor, in: project)
+        documentPanelMap[document.id, default: [:]][panel.id] = descriptor
+        dockState.addPanel(panel, to: preferredPosition ?? preferredEditorPosition)
     }
     
     @MainActor
-    private func createPanel(for document: IDEDocument, in project: IDEProject) -> DockPanel {
-        let panelID = "document-\(document.id.uuidString)"
+    private func createPanel(for document: IDEDocument, descriptor: ContentPanelDescriptor, in project: IDEProject) -> DockPanel {
+        let panelID = "document-\(descriptor.id)-\(document.id.uuidString)"
+        let title = descriptor.isEditable ? document.name : "\(descriptor.name): \(document.name)"
         return DockPanel(
             id: panelID,
-            title: document.name,
-            icon: document.icon,
+            title: title,
+            icon: descriptor.icon,
             position: preferredEditorPosition,
             visibility: [.showHeader, .showCloseButton, .allowDrag, .allowResize, .allowFloat, .allowTabbing],
             userInfo: lifecycleHandlers(for: document, panelID: panelID, project: project)
         ) {
-            IDEEditorPanel(document: document)
+            ContentPanelRegistry.shared.makeView(for: document, using: descriptor)
                 .environmentObject(self)
         }
     }
@@ -330,7 +334,10 @@ public class IDEState: ObservableObject {
         let onClose: () -> Void = { [weak self, weak project] in
             Task { @MainActor in
                 guard let self else { return }
-                self.documentPanelMap.removeValue(forKey: document.id)
+                self.documentPanelMap[document.id]?.removeValue(forKey: panelID)
+                if self.documentPanelMap[document.id]?.isEmpty == true {
+                    self.documentPanelMap.removeValue(forKey: document.id)
+                }
                 if !self.isClosingPanelsProgrammatically {
                     project?.closeDocument(document)
                 }

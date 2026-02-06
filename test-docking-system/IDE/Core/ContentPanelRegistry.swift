@@ -118,7 +118,7 @@ public final class ContentPanelRegistry: ObservableObject {
         
         // HTML Preview
         register(.htmlPreview) { document in
-            HTMLPreviewWrapper(document: document)
+            IDEPreviewPanel(document: document)
         }
         
         // Markdown Preview

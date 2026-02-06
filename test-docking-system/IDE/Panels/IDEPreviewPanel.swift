@@ -4,18 +4,21 @@ import WebKit
 
 // MARK: - Preview Panel
 
-/// Live preview panel for HTML and other previewable content
+/// Live preview panel for HTML and other previewable content bound to a specific document
 public struct IDEPreviewPanel: View {
-    @ObservedObject var project: IDEProject
-    @EnvironmentObject var ideState: IDEState
+    @ObservedObject var document: IDEDocument
     @Environment(\.dockTheme) var theme
     
     @State private var refreshTrigger: UUID = UUID()
     @State private var isAutoRefresh: Bool = true
     @State private var scale: CGFloat = 1.0
+    @State private var lastAutoRefreshedDocumentID: UUID?
+    @State private var lastAutoRefreshedContentHash: Int?
+    @State private var contentSubscription: AnyCancellable?
+    @State private var subscribedDocumentID: UUID?
     
-    public init(project: IDEProject) {
-        self.project = project
+    public init(document: IDEDocument) {
+        self.document = document
     }
     
     public var body: some View {
@@ -24,22 +27,14 @@ public struct IDEPreviewPanel: View {
             previewContent
         }
         .background(theme.colors.panelBackground)
-        .onReceive(activeDocumentContentPublisher) { _ in
-            if isAutoRefresh {
-                refreshPreview()
-            }
-        }
+        .onAppear(perform: subscribeToDocument)
     }
     
     // MARK: - Toolbar
     
     private var previewToolbar: some View {
         DockToolbarScaffold(leading: {
-            if let document = previewDocument {
-                DockToolbarChip(icon: "display", title: document.name)
-            } else {
-                DockToolbarChip(icon: "eye.slash", title: "No Preview")
-            }
+            DockToolbarChip(icon: "display", title: document.name)
         }, trailing: {
             DockToolbarIconButton(
                 "arrow.triangle.2.circlepath",
@@ -82,61 +77,36 @@ public struct IDEPreviewPanel: View {
     
     @ViewBuilder
     private var previewContent: some View {
-        if let document = previewDocument {
-            PreviewWebView(
-                document: document,
-                refreshTrigger: refreshTrigger,
-                scale: scale
-            )
-        } else {
-            emptyPreviewView
-        }
-    }
-    
-    private var emptyPreviewView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "eye.slash")
-                .font(.system(size: 48))
-                .foregroundColor(theme.colors.tertiaryText)
-            
-            Text("No preview available")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(theme.colors.secondaryText)
-            
-            Text("Open an HTML file to see a live preview")
-                .font(.system(size: 13))
-                .foregroundColor(theme.colors.tertiaryText)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        PreviewWebView(
+            document: document,
+            refreshTrigger: refreshTrigger,
+            scale: scale
+        )
     }
     
     // MARK: - Helpers
-    
-    private var previewDocument: IDEDocument? {
-        // First check if there's a specific preview URL set
-        if let previewURL = ideState.previewURL,
-           let doc = project.openDocuments.first(where: { $0.fileURL == previewURL }) {
-            return doc
-        }
-        // Otherwise use active document if it's previewable
-        if let activeDoc = project.activeDocument, activeDoc.fileType.canPreview {
-            return activeDoc
-        }
-        // Fall back to first previewable document
-        return project.openDocuments.first { $0.fileType.canPreview }
-    }
     
     private func refreshPreview() {
         refreshTrigger = UUID()
     }
 
-    private var activeDocumentContentPublisher: AnyPublisher<String, Never> {
-        if let document = project.activeDocument {
-            return document.buffer.$currentContent
-                .debounce(for: .milliseconds(75), scheduler: RunLoop.main)
-                .eraseToAnyPublisher()
-        }
-        return Empty().eraseToAnyPublisher()
+    private func subscribeToDocument() {
+        guard subscribedDocumentID != document.id else { return }
+        subscribedDocumentID = document.id
+        contentSubscription?.cancel()
+        let documentID = document.id
+        contentSubscription = document.buffer.$currentContent
+            .debounce(for: .milliseconds(75), scheduler: RunLoop.main)
+            .sink { latestContent in
+                guard isAutoRefresh else { return }
+                let contentHash = latestContent.hashValue
+                guard documentID != lastAutoRefreshedDocumentID || contentHash != lastAutoRefreshedContentHash else {
+                    return
+                }
+                lastAutoRefreshedDocumentID = documentID
+                lastAutoRefreshedContentHash = contentHash
+                refreshPreview()
+            }
     }
 }
 
@@ -165,6 +135,10 @@ struct LiveHTMLPreviewRepresentable: UIViewRepresentable {
     let refreshTrigger: UUID
     let scale: CGFloat
     
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+    
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
@@ -178,12 +152,24 @@ struct LiveHTMLPreviewRepresentable: UIViewRepresentable {
     }
     
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // Apply scale
-        webView.scrollView.zoomScale = scale
-        webView.scrollView.minimumZoomScale = 0.5
-        webView.scrollView.maximumZoomScale = 2.0
+        // Apply scale only when it actually changes so we don't reset scroll offset each update
+        let scrollView = webView.scrollView
+        scrollView.minimumZoomScale = 0.5
+        scrollView.maximumZoomScale = 2.0
+        if abs(scrollView.zoomScale - scale) > 0.001 {
+            scrollView.setZoomScale(scale, animated: false)
+        }
         
-        // Load content
-        webView.loadHTMLString(htmlContent, baseURL: baseURL)
+        // Load content only when it actually changed or a manual refresh was requested
+        if context.coordinator.lastHTML != htmlContent || context.coordinator.lastRefreshTrigger != refreshTrigger {
+            context.coordinator.lastHTML = htmlContent
+            context.coordinator.lastRefreshTrigger = refreshTrigger
+            webView.loadHTMLString(htmlContent, baseURL: baseURL)
+        }
+    }
+    
+    final class Coordinator {
+        var lastHTML: String?
+        var lastRefreshTrigger: UUID?
     }
 }
