@@ -45,7 +45,8 @@ public final class MCPToolRegistry: ObservableObject {
     public func register(_ tool: any MCPTool) {
         let def = tool.definition
         guard tools[def.id] == nil else {
-            fatalError("[MCPToolRegistry] Attempted to register duplicate tool id: \(def.id)")
+            print("[MCPToolRegistry] Skipping duplicate tool id: \(def.id)")
+            return
         }
         tools[def.id] = tool
         

@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import UIKit
 
 // MARK: - Agent Chat Style
 
@@ -160,6 +161,7 @@ public struct AgentChatView: View {
     @Environment(\.dockTheme) private var theme
     @StateObject private var agent = MCPAgent.shared
     @StateObject private var chatManager = ChatServiceManager.shared
+    @StateObject private var voiceService = VoiceChatService.shared
     @State private var inputText: String = ""
     @State private var isExpanded: Bool = true
     @State private var showError: Bool = false
@@ -271,87 +273,186 @@ public struct AgentChatView: View {
     }
 
     private var conversationView: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(agent.messages) { message in
-                        MessageBubble(message: message, onSuggestionTap: executeSuggestion)
-                            .id(message.id)
+        VStack(spacing: 0) {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(groupedMessages) { group in
+                            switch group {
+                            case .single(let message):
+                                MessageBubble(message: message, onSuggestionTap: executeSuggestion)
+                                    .id(message.id)
+                            case .toolGroup(let messages):
+                                CollapsibleToolGroup(messages: messages)
+                                    .id(messages.first?.id ?? UUID())
+                            }
+                        }
+                        
+                        if !agent.streamingContent.isEmpty {
+                            StreamingBubble(content: agent.streamingContent)
+                        }
+                        
+                        Color.clear.frame(height: 1).id("bottom-anchor")
                     }
-                    
-                    if !agent.streamingContent.isEmpty {
-                        StreamingBubble(content: agent.streamingContent)
-                    }
-                    
-                    if agent.isProcessing || !agent.pendingToolCalls.isEmpty {
-                        AgentProgressView(
-                            isProcessing: agent.isProcessing,
-                            isThinking: agent.isThinking,
-                            currentThought: agent.currentThought,
-                            toolCalls: agent.pendingToolCalls
-                        )
-                    }
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
-            }
-            .onChange(of: agent.messages.count) { _, _ in
-                if let last = agent.messages.last {
+                .onChange(of: agent.messages.count) { _, _ in
                     withAnimation(.easeOut(duration: 0.3)) {
-                        proxy.scrollTo(last.id, anchor: .bottom)
+                        proxy.scrollTo("bottom-anchor", anchor: .bottom)
                     }
                 }
+                .onChange(of: agent.streamingContent) { _, _ in
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        proxy.scrollTo("bottom-anchor", anchor: .bottom)
+                    }
+                }
+            }
+            
+            // Pinned progress bar at bottom of conversation
+            if agent.isProcessing || !agent.pendingToolCalls.isEmpty {
+                AgentProgressView(
+                    isProcessing: agent.isProcessing,
+                    isThinking: agent.isThinking,
+                    currentThought: agent.currentThought,
+                    toolCalls: agent.pendingToolCalls
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: agent.isProcessing)
             }
         }
+    }
+    
+    // MARK: - Message Grouping
+    
+    private enum MessageGroup: Identifiable {
+        case single(AgentMessage)
+        case toolGroup([AgentMessage])
+        
+        var id: UUID {
+            switch self {
+            case .single(let msg): return msg.id
+            case .toolGroup(let msgs): return msgs.first?.id ?? UUID()
+            }
+        }
+    }
+    
+    private var groupedMessages: [MessageGroup] {
+        var groups: [MessageGroup] = []
+        var pendingToolMessages: [AgentMessage] = []
+        
+        for message in agent.messages {
+            if message.role == .tool {
+                pendingToolMessages.append(message)
+            } else {
+                if !pendingToolMessages.isEmpty {
+                    groups.append(.toolGroup(pendingToolMessages))
+                    pendingToolMessages = []
+                }
+                groups.append(.single(message))
+            }
+        }
+        if !pendingToolMessages.isEmpty {
+            groups.append(.toolGroup(pendingToolMessages))
+        }
+        return groups
     }
     
     // MARK: - Input Area
     
     private func inputArea(style: AgentChatStyle) -> some View {
-        HStack(spacing: 12) {
-            AttachmentMenu(actionImage: attachImage, actionFile: attachFile, actionCode: attachCode)
-                .foregroundColor(style.textSecondary)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                TextField(
-                    "Guide the agent...",
-                    text: $inputText,
-                    axis: .vertical
-                )
-                .textFieldStyle(.plain)
-                .lineLimit(1...4)
-                .focused($isInputFocused)
-                .padding(.vertical, 6)
-                .foregroundStyle(style.textPrimary)
-                .placeholder(when: inputText.isEmpty) {
-                    Text("Guide the agent...")
+        VStack(spacing: 6) {
+            // Live transcript indicator
+            if voiceService.isListening {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 8, height: 8)
+                        .opacity(voiceService.isListening ? 1 : 0)
+                        .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: voiceService.isListening)
+                    
+                    Text(voiceService.liveTranscript.isEmpty ? "Listening..." : voiceService.liveTranscript)
+                        .font(.system(size: 12))
                         .foregroundColor(style.textSecondary)
+                        .lineLimit(2)
+                    
+                    Spacer()
+                    
+                    Button(action: { voiceService.stopListening() }) {
+                        Text("Done")
+                            .font(.system(size: 11, weight: .semibold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(style.accent)
+                            .foregroundColor(.white)
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .onSubmit {
-                    sendMessage()
+                .padding(.horizontal, 4)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+            
+            HStack(spacing: 12) {
+                AttachmentMenu(actionImage: attachImage, actionFile: attachFile, actionCode: attachCode)
+                    .foregroundColor(style.textSecondary)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    TextField(
+                        "Guide the agent...",
+                        text: $inputText,
+                        axis: .vertical
+                    )
+                    .textFieldStyle(.plain)
+                    .lineLimit(1...4)
+                    .focused($isInputFocused)
+                    .padding(.vertical, 6)
+                    .foregroundStyle(style.textPrimary)
+                    .placeholder(when: inputText.isEmpty && !voiceService.isListening) {
+                        Text("Guide the agent...")
+                            .foregroundColor(style.textSecondary)
+                    }
+                    .onSubmit {
+                        sendMessage()
+                    }
+                    
+                    Rectangle()
+                        .fill(style.border)
+                        .frame(height: 1)
                 }
                 
-                Rectangle()
-                    .fill(style.border)
-                    .frame(height: 1)
+                // Microphone button
+                Button(action: toggleVoiceInput) {
+                    Image(systemName: voiceService.isListening ? "mic.fill" : "mic")
+                        .font(.title3)
+                        .foregroundStyle(voiceService.isListening ? Color.red : style.textSecondary)
+                        .padding(6)
+                        .background(
+                            Circle()
+                                .fill(voiceService.isListening ? Color.red.opacity(0.15) : style.accentSoft.opacity(0.5))
+                        )
+                }
+                .buttonStyle(.plain)
+                
+                // Send button
+                Button(action: sendMessage) {
+                    Image(systemName: agent.isProcessing ? "stop.fill" : "arrow.up.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(
+                            inputText.isEmpty && !agent.isProcessing
+                            ? style.textSecondary.opacity(0.4)
+                            : style.accent
+                        )
+                        .padding(6)
+                        .background(
+                            Circle()
+                                .fill(style.accentSoft)
+                                .opacity(inputText.isEmpty && !agent.isProcessing ? 0.4 : 1)
+                        )
+                }
+                .disabled(inputText.isEmpty && !agent.isProcessing)
             }
-            
-            Button(action: sendMessage) {
-                Image(systemName: agent.isProcessing ? "stop.fill" : "arrow.up.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(
-                        inputText.isEmpty && !agent.isProcessing
-                        ? style.textSecondary.opacity(0.4)
-                        : style.accent
-                    )
-                    .padding(6)
-                    .background(
-                        Circle()
-                            .fill(style.accentSoft)
-                            .opacity(inputText.isEmpty && !agent.isProcessing ? 0.4 : 1)
-                    )
-            }
-            .disabled(inputText.isEmpty && !agent.isProcessing)
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: voiceService.isListening)
     }
     
     // MARK: - Actions
@@ -382,6 +483,25 @@ public struct AgentChatView: View {
     private func executeSuggestion(_ suggestion: AgentSuggestion) {
         Task {
             await agent.executeSuggestion(suggestion)
+        }
+    }
+    
+    private func toggleVoiceInput() {
+        if voiceService.isListening {
+            voiceService.stopListening()
+        } else {
+            voiceService.startListening { transcript in
+                // Put transcribed text into input or send directly
+                if inputText.isEmpty {
+                    inputText = transcript
+                } else {
+                    inputText += " " + transcript
+                }
+                // Auto-send if API key is configured
+                if !chatManager.apiKey.isEmpty {
+                    sendMessage()
+                }
+            }
         }
     }
     
@@ -530,9 +650,14 @@ private struct AgentMarkdownView: View {
     let textColor: Color
     let accentColor: Color
     let alignment: TextAlignment
+    var autoCloseCodeBlocks: Bool = false
+    
+    private var processedText: String {
+        autoCloseCodeBlocks ? MarkdownParser.autoClosedCodeBlocks(text) : text
+    }
     
     private var blocks: [MarkdownBlock] {
-        MarkdownParser.parse(text)
+        MarkdownParser.parse(processedText)
     }
     
     private var horizontalAlignment: HorizontalAlignment {
@@ -609,25 +734,30 @@ private struct AgentMarkdownView: View {
             .background(textColor.opacity(0.08))
             .cornerRadius(10)
         case .code(let language, let code):
-            VStack(alignment: .leading, spacing: 6) {
-                if let language, !language.isEmpty {
-                    Text(language.uppercased())
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(accentColor)
+            ZStack(alignment: .topTrailing) {
+                VStack(alignment: .leading, spacing: 6) {
+                    if let language, !language.isEmpty {
+                        Text(language.uppercased())
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(accentColor)
+                    }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        Text(code)
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                            .foregroundColor(textColor)
+                            .padding(.vertical, 8)
+                    }
                 }
-                ScrollView(.horizontal, showsIndicators: false) {
-                    Text(code)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .foregroundColor(textColor)
-                        .padding(.vertical, 8)
-                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(textColor.opacity(0.12))
+                .cornerRadius(12)
+                
+                CopyCodeButton(code: code, accentColor: accentColor)
+                    .padding(8)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(textColor.opacity(0.12))
-            .cornerRadius(12)
         case .divider:
             Rectangle()
                 .fill(textColor.opacity(0.15))
@@ -671,6 +801,18 @@ private enum MarkdownBlock: Hashable {
 }
 
 private enum MarkdownParser {
+    static func autoClosedCodeBlocks(_ text: String) -> String {
+        var sanitized = text
+        let fences = ["```", "'''"]
+        for fence in fences {
+            let count = sanitized.components(separatedBy: fence).count - 1
+            if count % 2 != 0 {
+                sanitized += "\n\(fence)"
+            }
+        }
+        return sanitized
+    }
+    
     static func parse(_ text: String) -> [MarkdownBlock] {
         let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
         let lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -815,8 +957,12 @@ struct StreamingBubble: View {
     
     @Environment(\.agentChatStyle) private var style
     
+    private var processedContent: String {
+        MarkdownParser.autoClosedCodeBlocks(content)
+    }
+    
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Circle()
                 .fill(style.assistantAvatarBackground)
                 .frame(width: 28, height: 28)
@@ -826,26 +972,67 @@ struct StreamingBubble: View {
                         .foregroundColor(.white)
                 }
             
-            VStack(alignment: .leading) {
-                Text(content)
-                    .foregroundColor(style.textPrimary)
-                    .padding(12)
-                    .background(style.bubbleAssistant)
-                    .cornerRadius(16)
-                
-                HStack(spacing: 4) {
-                    ForEach(0..<3) { i in
-                        Circle()
-                            .fill(style.accent)
-                            .frame(width: 4, height: 4)
-                            .opacity(0.6)
-                    }
-                }
-                .padding(.leading, 12)
+            AgentMarkdownView(
+                text: processedContent,
+                textColor: style.textPrimary,
+                accentColor: style.accent,
+                alignment: .leading,
+                autoCloseCodeBlocks: true
+            )
+            .padding(12)
+            .background(style.bubbleAssistant)
+            .cornerRadius(16)
+            .overlay(alignment: .bottomLeading) {
+                RetroCursorView(color: style.accent)
+                    .padding(.leading, 6)
+                    .padding(.bottom, 6)
             }
-            
-            Spacer()
         }
+    }
+}
+
+// MARK: - Copy Button & Cursor
+
+private struct CopyCodeButton: View {
+    let code: String
+    let accentColor: Color
+    @State private var copied = false
+    
+    var body: some View {
+        Button {
+            UIPasteboard.general.string = code
+            copied = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                copied = false
+            }
+        } label: {
+            Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                .font(.caption2.weight(.semibold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(accentColor.opacity(0.18))
+                .foregroundColor(accentColor)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct RetroCursorView: View {
+    let color: Color
+    @State private var isVisible: Bool = true
+    private let timer = Timer.publish(every: 0.55, on: .main, in: .common).autoconnect()
+    
+    var body: some View {
+        RoundedRectangle(cornerRadius: 1.5)
+            .fill(color)
+            .frame(width: 6, height: 16)
+            .opacity(isVisible ? 1 : 0.15)
+            .onReceive(timer) { _ in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isVisible.toggle()
+                }
+            }
     }
 }
 
@@ -1002,6 +1189,113 @@ private struct ToolCallProgressRow: View {
         case .completed: return .green
         case .failed: return style.accent
         }
+    }
+}
+
+// MARK: - Collapsible Tool Group
+
+struct CollapsibleToolGroup: View {
+    let messages: [AgentMessage]
+    @Environment(\.agentChatStyle) private var style
+    @State private var isExpanded = false
+    
+    private var summary: String {
+        let count = messages.count
+        let successCount = messages.filter { msg in
+            if case .toolResult(let result) = msg.content, result.isSuccess { return true }
+            return false
+        }.count
+        let failCount = count - successCount
+        
+        if failCount > 0 {
+            return "\(count) tool \(count == 1 ? "action" : "actions") (\(successCount) ok, \(failCount) failed)"
+        }
+        return "\(count) tool \(count == 1 ? "action" : "actions") completed"
+    }
+    
+    private var toolNames: String {
+        let names = messages.compactMap { $0.toolCalls?.first?.toolID }
+        let unique = Array(Set(names))
+        return unique.prefix(3).joined(separator: ", ") + (unique.count > 3 ? "..." : "")
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Collapsed summary header
+            Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { isExpanded.toggle() } }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "gearshape.2")
+                        .font(.system(size: 12))
+                        .foregroundColor(style.accent)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(summary)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(style.textPrimary)
+                        if !toolNames.isEmpty {
+                            Text(toolNames)
+                                .font(.system(size: 10))
+                                .foregroundColor(style.textSecondary)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(style.textSecondary)
+                }
+                .padding(10)
+                .background(style.surface.opacity(0.7))
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(style.border, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            
+            // Expanded detail
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(messages) { message in
+                        toolMessageRow(message)
+                    }
+                }
+                .padding(.top, 6)
+                .padding(.leading, 12)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func toolMessageRow(_ message: AgentMessage) -> some View {
+        let toolName = message.toolCalls?.first?.toolID ?? "tool"
+        let isSuccess: Bool = {
+            if case .toolResult(let result) = message.content { return result.isSuccess }
+            return false
+        }()
+        
+        HStack(spacing: 8) {
+            Image(systemName: isSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                .font(.system(size: 11))
+                .foregroundColor(isSuccess ? .green : .red)
+            
+            Text(toolName)
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundColor(style.textPrimary)
+            
+            Spacer()
+            
+            Text(message.timestamp, style: .time)
+                .font(.system(size: 10))
+                .foregroundColor(style.textSecondary)
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 8)
+        .background(style.surface.opacity(0.4))
+        .cornerRadius(6)
     }
 }
 

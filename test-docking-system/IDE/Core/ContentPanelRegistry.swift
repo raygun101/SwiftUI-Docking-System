@@ -131,6 +131,11 @@ public final class ContentPanelRegistry: ObservableObject {
             ImageViewerWrapper(document: document)
         }
         
+        // Diff Viewer
+        register(.diffViewer) { document in
+            DiffViewerPanel(document: document)
+        }
+        
         // Raw Text Viewer
         register(.rawViewer) { document in
             RawTextViewer(document: document)

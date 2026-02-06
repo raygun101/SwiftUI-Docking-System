@@ -36,9 +36,6 @@ public final class MCPIntegration: ObservableObject {
         // Register all tools
         registerAllTools()
         
-        // Setup notification observers
-        setupNotificationObservers()
-        
         isInitialized = true
         print("[MCP] MCP system initialized with \(toolRegistry.tools.count) tools")
     }
@@ -541,30 +538,7 @@ public final class MCPIntegration: ObservableObject {
         """
     }
     
-    // MARK: - Notification Handlers
-    
-    private func setupNotificationObservers() {
-        NotificationCenter.default.publisher(for: .agentInsertCode)
-            .sink { [weak self] notification in
-                guard let code = notification.userInfo?["code"] as? String,
-                      let language = notification.userInfo?["language"] as? String else { return }
-                print("[MCP] Insert code request: \(language), \(code.prefix(50))...")
-            }
-            .store(in: &cancellables)
-        
-        NotificationCenter.default.publisher(for: .agentOpenFile)
-            .sink { [weak self] notification in
-                guard let url = notification.userInfo?["url"] as? URL else { return }
-                print("[MCP] Open file request: \(url.path)")
-            }
-            .store(in: &cancellables)
-        
-        NotificationCenter.default.publisher(for: .agentCreateFile)
-            .sink { [weak self] notification in
-                print("[MCP] Create file request")
-            }
-            .store(in: &cancellables)
-    }
+    // Notification handling is centralized in AgentIDEBridge
 }
 
 // MARK: - MCP Export (All-in-one import)

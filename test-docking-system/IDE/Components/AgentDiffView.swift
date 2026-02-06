@@ -65,7 +65,7 @@ struct AgentDiffView: View {
     }
 }
 
-private struct DiffLineView: View {
+struct DiffLineView: View {
     let line: DiffLine
     
     private var backgroundColor: Color {
@@ -116,7 +116,7 @@ private struct DiffLineView: View {
     }
 }
 
-private struct DiffLine: Identifiable {
+struct DiffLine: Identifiable {
     enum ChangeType {
         case unchanged
         case addition
@@ -130,7 +130,7 @@ private struct DiffLine: Identifiable {
     let content: String
 }
 
-private enum DiffBuilder {
+enum DiffBuilder {
     static func buildDiff(oldText: String, newText: String) -> [DiffLine] {
         let oldLines = oldText.components(separatedBy: "\n")
         let newLines = newText.components(separatedBy: "\n")
