@@ -297,19 +297,16 @@ public final class MCPAgent: ObservableObject {
             case .delta(let text):
                 collectedContent += text
                 streamingContent = collectedContent
-                MCPLog.agent.debug("Streaming delta: \(text, privacy: .public)")
                 
             case .thinking(let thought):
                 isThinking = true
                 currentThought = thought
-                MCPLog.agent.debug("LLM thinking: \(thought, privacy: .public)")
                 
             case .toolCallStart(let call):
                 var mutableCall = call
                 mutableCall.status = .running
                 toolCalls.append(mutableCall)
                 pendingToolCalls = toolCalls
-                MCPLog.agent.info("Tool call started: \(call.toolID, privacy: .public)")
                 
             case .toolCallComplete(var call):
                 call.status = .completed
@@ -317,14 +314,11 @@ public final class MCPAgent: ObservableObject {
                     toolCalls[index] = call
                 }
                 pendingToolCalls = toolCalls
-                MCPLog.agent.info("Tool call completed: \(call.toolID, privacy: .public)")
                 
             case .suggestion(let suggestion):
                 collectedSuggestions.append(suggestion)
-                MCPLog.agent.debug("Suggestion received: \(suggestion.title, privacy: .public)")
                 
             case .complete:
-                MCPLog.agent.info("Stream marked complete")
                 break
                 
             case .error(let error):
@@ -352,6 +346,7 @@ public final class MCPAgent: ObservableObject {
             suggestions: outcome.suggestions
         )
         messages.append(assistantMessage)
+        MCPLog.agent.info("Assistant response: \(outcome.content, privacy: .public)")
         suggestions = outcome.suggestions
     }
 

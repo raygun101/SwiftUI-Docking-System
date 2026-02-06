@@ -410,31 +410,42 @@ struct MessageBubble: View {
     
     @Environment(\.agentChatStyle) private var style
     
+    private var stackAlignment: HorizontalAlignment {
+        message.role == .user ? .trailing : .leading
+    }
+    
+    private var frameAlignment: Alignment {
+        message.role == .user ? .trailing : .leading
+    }
+    
+    private var textAlignment: TextAlignment {
+        message.role == .user ? .trailing : .leading
+    }
+    
+    private var showsAvatar: Bool {
+        message.role != .system
+    }
+    
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            if message.role == .assistant || message.role == .tool {
+        VStack(alignment: stackAlignment, spacing: 6) {
+            if showsAvatar {
                 avatarView
             }
             
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 6) {
-                contentView
-                
-                if !message.suggestions.isEmpty {
-                    VStack(spacing: 4) {
-                        ForEach(message.suggestions) { suggestion in
-                            SuggestionButton(suggestion: suggestion, onTap: { onSuggestionTap(suggestion) })
-                        }
+            contentView
+                .frame(maxWidth: .infinity, alignment: frameAlignment)
+            
+            if !message.suggestions.isEmpty {
+                VStack(spacing: 4) {
+                    ForEach(message.suggestions) { suggestion in
+                        SuggestionButton(suggestion: suggestion, onTap: { onSuggestionTap(suggestion) })
                     }
                 }
-                
-                timestampView
             }
             
-            if message.role == .user {
-                avatarView
-            }
+            timestampView
         }
-        .frame(maxWidth: .infinity, alignment: message.role == .user ? .trailing : .leading)
+        .frame(maxWidth: .infinity, alignment: frameAlignment)
     }
     
     @ViewBuilder
@@ -453,16 +464,20 @@ struct MessageBubble: View {
     private var contentView: some View {
         switch message.content {
         case .text(let text):
-            Text(text)
-                .foregroundColor(style.textPrimary)
-                .padding(12)
-                .background(
-                    message.role == .user
-                        ? style.bubbleUser
-                        : style.bubbleAssistant
-                )
-                .cornerRadius(16)
-                .cornerRadius(message.role == .user ? 16 : 4, corners: message.role == .user ? [.bottomRight] : [.bottomLeft])
+            AgentMarkdownView(
+                text: text,
+                textColor: style.textPrimary,
+                accentColor: style.accent,
+                alignment: textAlignment
+            )
+            .padding(12)
+            .background(
+                message.role == .user
+                    ? style.bubbleUser
+                    : style.bubbleAssistant
+            )
+            .cornerRadius(16)
+            .cornerRadius(message.role == .user ? 16 : 4, corners: message.role == .user ? [.bottomRight] : [.bottomLeft])
             
         case .toolResult(let result):
             ToolResultView(result: result)
@@ -504,6 +519,292 @@ struct MessageBubble: View {
         Text(message.timestamp, style: .time)
             .font(.caption2)
             .foregroundColor(style.textSecondary.opacity(0.7))
+            .frame(maxWidth: .infinity, alignment: frameAlignment)
+    }
+}
+
+// MARK: - Markdown Rendering
+
+private struct AgentMarkdownView: View {
+    let text: String
+    let textColor: Color
+    let accentColor: Color
+    let alignment: TextAlignment
+    
+    private var blocks: [MarkdownBlock] {
+        MarkdownParser.parse(text)
+    }
+    
+    private var horizontalAlignment: HorizontalAlignment {
+        switch alignment {
+        case .trailing: return .trailing
+        case .center: return .center
+        default: return .leading
+        }
+    }
+    
+    private var frameAlignment: Alignment {
+        switch alignment {
+        case .trailing: return .trailing
+        case .center: return .center
+        default: return .leading
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: horizontalAlignment, spacing: 10) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                blockView(block)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: frameAlignment)
+    }
+    
+    @ViewBuilder
+    private func blockView(_ block: MarkdownBlock) -> some View {
+        switch block {
+        case .heading(let level, let value):
+            richText(value)
+                .font(fontForHeading(level))
+                .fontWeight(level <= 2 ? .semibold : .medium)
+                .foregroundColor(textColor)
+        case .paragraph(let value):
+            richText(value)
+        case .orderedList(let items):
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text("\(index + 1).")
+                            .font(.system(.body, design: .rounded).weight(.semibold))
+                            .foregroundColor(accentColor)
+                        richText(item)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: frameAlignment)
+        case .unorderedList(let items):
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(items, id: \.self) { item in
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Circle()
+                            .fill(accentColor.opacity(0.8))
+                            .frame(width: 6, height: 6)
+                            .padding(.top, 6)
+                        richText(item)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: frameAlignment)
+        case .blockquote(let value):
+            HStack(alignment: .top, spacing: 12) {
+                Rectangle()
+                    .fill(accentColor.opacity(0.4))
+                    .frame(width: 3)
+                    .cornerRadius(2)
+                richText(value)
+                    .foregroundColor(textColor.opacity(0.9))
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .background(textColor.opacity(0.08))
+            .cornerRadius(10)
+        case .code(let language, let code):
+            VStack(alignment: .leading, spacing: 6) {
+                if let language, !language.isEmpty {
+                    Text(language.uppercased())
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(accentColor)
+                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    Text(code)
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .foregroundColor(textColor)
+                        .padding(.vertical, 8)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(textColor.opacity(0.12))
+            .cornerRadius(12)
+        case .divider:
+            Rectangle()
+                .fill(textColor.opacity(0.15))
+                .frame(height: 1)
+        }
+    }
+    
+    private func richText(_ value: String) -> some View {
+        let attributed = (try? AttributedString(
+            markdown: value,
+            options: .init(
+                interpretedSyntax: .full,
+                failurePolicy: .returnPartiallyParsedIfPossible
+            )
+        )) ?? AttributedString(value)
+        return Text(attributed)
+            .foregroundColor(textColor)
+            .multilineTextAlignment(alignment)
+            .lineSpacing(4)
+            .textSelection(.enabled)
+    }
+    
+    private func fontForHeading(_ level: Int) -> Font {
+        switch level {
+        case 1: return .system(size: 20, weight: .semibold)
+        case 2: return .system(size: 18, weight: .semibold)
+        case 3: return .system(size: 16, weight: .semibold)
+        default: return .system(size: 15, weight: .medium)
+        }
+    }
+}
+
+private enum MarkdownBlock: Hashable {
+    case heading(level: Int, text: String)
+    case paragraph(String)
+    case orderedList([String])
+    case unorderedList([String])
+    case code(language: String?, code: String)
+    case blockquote(String)
+    case divider
+}
+
+private enum MarkdownParser {
+    static func parse(_ text: String) -> [MarkdownBlock] {
+        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
+        let lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        var blocks: [MarkdownBlock] = []
+        var index = 0
+        var paragraphBuffer: [String] = []
+        
+        func flushParagraph() {
+            let sentence = paragraphBuffer.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+            if !sentence.isEmpty {
+                blocks.append(.paragraph(sentence))
+            }
+            paragraphBuffer.removeAll()
+        }
+        
+        while index < lines.count {
+            let currentLine = lines[index]
+            let trimmed = currentLine.trimmingCharacters(in: .whitespaces)
+            
+            if trimmed.isEmpty {
+                flushParagraph()
+                index += 1
+                continue
+            }
+            
+            if trimmed.hasPrefix("```") {
+                flushParagraph()
+                let language = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                index += 1
+                var codeLines: [String] = []
+                while index < lines.count {
+                    let line = lines[index]
+                    if line.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
+                        index += 1
+                        break
+                    }
+                    codeLines.append(line)
+                    index += 1
+                }
+                blocks.append(.code(language: language.isEmpty ? nil : language, code: codeLines.joined(separator: "\n")))
+                continue
+            }
+            
+            if trimmed.hasPrefix("#") {
+                flushParagraph()
+                let level = min(trimmed.prefix { $0 == "#" }.count, 4)
+                let content = trimmed.drop { $0 == "#" }.drop(while: { $0 == " " })
+                blocks.append(.heading(level: level, text: String(content)))
+                index += 1
+                continue
+            }
+            
+            if let ordered = parseOrderedList(from: lines, startIndex: &index) {
+                flushParagraph()
+                blocks.append(.orderedList(ordered))
+                continue
+            }
+            
+            if let unordered = parseUnorderedList(from: lines, startIndex: &index) {
+                flushParagraph()
+                blocks.append(.unorderedList(unordered))
+                continue
+            }
+            
+            if trimmed.hasPrefix(">") {
+                flushParagraph()
+                var quoteLines: [String] = []
+                while index < lines.count {
+                    let line = lines[index].trimmingCharacters(in: .whitespaces)
+                    guard line.hasPrefix(">") else { break }
+                    quoteLines.append(String(line.dropFirst().trimmingCharacters(in: .whitespaces)))
+                    index += 1
+                }
+                blocks.append(.blockquote(quoteLines.joined(separator: " ")))
+                continue
+            }
+            
+            if trimmed == "---" || trimmed == "***" {
+                flushParagraph()
+                blocks.append(.divider)
+                index += 1
+                continue
+            }
+            
+            paragraphBuffer.append(trimmed)
+            index += 1
+        }
+        
+        flushParagraph()
+        return blocks.isEmpty ? [.paragraph(text)] : blocks
+    }
+    
+    private static func parseOrderedList(from lines: [String], startIndex: inout Int) -> [String]? {
+        var tempIndex = startIndex
+        var items: [String] = []
+        while tempIndex < lines.count {
+            let trimmed = lines[tempIndex].trimmingCharacters(in: .whitespaces)
+            guard let dotIndex = trimmed.firstIndex(of: "."), dotIndex != trimmed.startIndex else { break }
+            let prefix = trimmed[..<dotIndex]
+            guard Int(prefix) != nil else { break }
+            let afterDotIndex = trimmed.index(after: dotIndex)
+            guard afterDotIndex < trimmed.endIndex, trimmed[afterDotIndex] == " " else { break }
+            let content = trimmed[trimmed.index(after: afterDotIndex)...].trimmingCharacters(in: .whitespaces)
+            items.append(String(content))
+            tempIndex += 1
+            if tempIndex < lines.count {
+                let nextTrimmed = lines[tempIndex].trimmingCharacters(in: .whitespaces)
+                if nextTrimmed.isEmpty { tempIndex += 1; break }
+                if nextTrimmed.firstIndex(of: ".") == nil { break }
+            }
+        }
+        guard !items.isEmpty else { return nil }
+        startIndex = tempIndex
+        return items
+    }
+    
+    private static func parseUnorderedList(from lines: [String], startIndex: inout Int) -> [String]? {
+        var tempIndex = startIndex
+        var items: [String] = []
+        while tempIndex < lines.count {
+            let trimmed = lines[tempIndex].trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") else { break }
+            let content = trimmed.dropFirst(2).trimmingCharacters(in: .whitespaces)
+            items.append(String(content))
+            tempIndex += 1
+            if tempIndex < lines.count {
+                let nextTrimmed = lines[tempIndex].trimmingCharacters(in: .whitespaces)
+                if nextTrimmed.isEmpty { tempIndex += 1; break }
+                if !(nextTrimmed.hasPrefix("- ") || nextTrimmed.hasPrefix("* ")) { break }
+            }
+        }
+        guard !items.isEmpty else { return nil }
+        startIndex = tempIndex
+        return items
     }
 }
 
